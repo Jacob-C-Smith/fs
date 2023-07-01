@@ -25,9 +25,10 @@ int path_open ( path **pp_path, path *p_parent_path, const char *path_string )
     #ifdef _WIN64
 
     // Windows initialized data
-    WIN32_FIND_DATA find_data   = { 0 };
-    char            _path[2048] = "";
-    HANDLE          find_handle = 0;
+    WIN32_FIND_DATA find_data      = { 0 };
+    char            _path[2048]    = "";
+    HANDLE          find_handle    = 0;
+    DWORD           path_attribute = 0;
     #else
 
     // Unix like initialized data
@@ -35,79 +36,286 @@ int path_open ( path **pp_path, path *p_parent_path, const char *path_string )
     
     // Platform dependent path_open implementation
     #ifdef _WIN64
-    
-    // Windows implementation
-    
-    // Copy the user specified path into an internal buffer
-    sprintf(_path, "%s\\*.*", path_string);
 
-    // Get the first file in a directory
-    find_handle = FindFirstFile(_path, &find_data);
-    
+    ////////////////////////////
+    // Windows implementation //
+    ////////////////////////////
+
+    // Allocate memory for the path
+    p_path = realloc(0, sizeof(path));
+
     // Error check
-    if ( find_handle == INVALID_HANDLE_VALUE )
-        goto path_not_found;//printf("Path not found: [%s]\n", path);
+    if ( p_path == (void *) 0 )
+        goto no_mem;
+    
+    // Zero set
+    memset(p_path, 0, sizeof(path));
 
-    // Parse the path as a directory
-    if ( find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY )
+    // Copy the user specified path into an internal buffer
+    sprintf(_path, "%s", path_string);
+
+    // Get information about the file
+    path_attribute = GetFileAttributesA(_path);
+
+    // Error check
+    if ( path_attribute == INVALID_FILE_ATTRIBUTES )
+        goto failed_to_get_file_attributes;
+
+    // Parse the file as a directory
+    if ( path_attribute & FILE_ATTRIBUTE_DIRECTORY )
     {
-        
-        // Skip past "." and ".."
-        if ( FindNextFile(find_handle, &find_data) == 0 )
-            goto find_next_file_failed;
+        // Initialized data
+        DWORD   low_file_size  = 0;
+        DWORD   high_file_size = 0;
+        size_t  file_size      = 0;
+        char   *full_path      = 0;
+        char   *name           = 0;
+        /*HANDLE  file           = CreateFile(
+            _path,
+            GENERIC_READ | GENERIC_WRITE,
+            0,
+            NULL,
+            OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL,
+            NULL
+        );
 
-        // Iterate over each item in the directory
-        while ( FindNextFile(find_handle, &find_data) )
+        // Error check
+        if ( file == INVALID_HANDLE_VALUE )
+            goto failed_to_open_file;
+        */
+       
+        // Copy the name
         {
 
             // Initialized data
-            path *i_path = realloc(0, sizeof(path));
-
-            // Error check
-            if ( i_path == (void *) 0 )
-                goto no_mem;
-
-            // Build the file path 
-            sprintf(_path, "%s\\%s", path_string, find_data.cFileName);
-
-            // Parse the item as a directory
-            if ( find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY )
+            // TODO: This could be better optimized
+            char   *after_backsl = strrchr(_path, '\\'),
+                   *after_fwdsl  = strrchr(_path, '/'),
+                   *after_sl     = 1 + ( after_backsl > after_fwdsl ) ? after_fwdsl : after_backsl;
+            size_t  len          = strlen(after_sl)-1;
+            
+            trim:
+            if ( len == 0 )
             {
-                printf("Directory: %s\n", _path);
-
-                path_open(pp_path, p_path, _path);
+                *after_sl = '\0';
+                after_backsl = strrchr(_path, '\\'),
+                after_fwdsl  = strrchr(_path, '/'),
+                after_sl     = ( after_backsl < after_fwdsl ) ? after_fwdsl : after_backsl;
+                len          = strlen(after_sl) - 1; 
+                goto trim;
             }
 
-            // Parse the item as a file
-            else
+            // Allocate memory for name
+            name = realloc(0, sizeof(char) * ( len )); // Don't need to allocate a null terminator
+
+            // Error check
+            if ( name == (void *) 0 )
+                goto no_mem;
+            
+            // Copy the name
+            strncpy(name, after_sl+1, len);
+
+            // Wrtie a null terminator
+            name[len] = '\0';
+        }
+
+        // Copy the full path
+        {
+
+            // Initialized data
+            size_t len = strlen(_path);
+
+            // Allocate memory for the full path string
+            full_path = realloc(0, sizeof(char) * ( len + 1 ));
+
+            // Error check
+            if ( full_path == (void *) 0 )
+                goto no_mem;
+            
+            // Copy the full path
+            strncpy(full_path, _path, len);
+
+            // Wrtie a null terminator
+            full_path[len] = '\0';
+        }   
+
+        // Recursively construct paths from the directory
+        {
+            // Get the first file in a directory
+            find_handle = FindFirstFile(_path, &find_data);
+
+            // Error check
+            if ( find_handle == INVALID_HANDLE_VALUE )
+                goto path_not_found;//printf("Path not found: [%s]\n", path);
+
+            // Parse the path as a directory
+            if ( find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY )
             {
-                printf("File: %s\n", _path);
-                path_open(pp_path, p_path, _path);
+                /*
+                // Skip past "." and ".."
+                if ( FindNextFile(find_handle, &find_data) == 0 )
+                    goto find_next_file_failed;
+
+                // Iterate over each item in the directory
+                while ( FindNextFile(find_handle, &find_data) )
+                {
+
+                    // Initialized data
+                    path *i_path = realloc(0, sizeof(path));
+
+                    // Error check
+                    if ( i_path == (void *) 0 )
+                        goto no_mem;
+
+                    // Build the file path 
+                    sprintf(_path, "%s\\%s", path_string, find_data.cFileName);
+
+                    // Parse the item as a directory
+                    if ( find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY )
+                    {
+                        printf("Directory: %s\n", _path);
+
+                        path_open(pp_path, p_path, _path);
+                    }
+
+                    // Parse the item as a file
+                    else
+                    {
+                        printf("File: %s\n", _path);
+                        path_open(pp_path, p_path, _path);
+                    }
+                }
+
+                // Clean up the scope
+                FindClose(find_handle);
+                */
             }
         }
 
-        // Clean up the scope
-        FindClose(find_handle);
+        // Populate the path struct
+        *p_path = (path)
+        {
+            .full_path               = full_path,
+            .name                    = name,
+            .type                    = path_type_directory,
+            .p_next_content          = 0,
+            .p_parent_directory_path = p_parent_path,
+            .directory = {
+                0
+            }
+        };
+
+        // Clean up
+        //CloseHandle(file);
     }
 
     // Parse the path as a file
+    else
     {
 
+        // Initialized data
+        DWORD   low_file_size  = 0;
+        DWORD   high_file_size = 0;
+        size_t  file_size      = 0;
+        char   *full_path      = 0;
+        char   *name           = 0;
+        HANDLE  file           = CreateFile(
+            _path,
+            GENERIC_READ | GENERIC_WRITE,
+            0,
+            NULL,
+            OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL,
+            NULL
+        );
+
+        // Error check
+        if ( file == INVALID_HANDLE_VALUE )
+            goto failed_to_open_file;
+
+        // Copy the name
+        {
+
+            // Initialized data
+            // TODO: This could be better optimized
+            char   *after_backsl = strrchr(_path, '\\'),
+                   *after_fwdsl  = strrchr(_path, '/'),
+                   *after_sl     = 1 + ( after_backsl > after_fwdsl ) ? after_fwdsl : after_backsl;
+            size_t  len          = strlen(after_sl)-1;
+
+            // Allocate memory for name
+            name = realloc(0, sizeof(char) * ( len )); // Don't need to allocate a null terminator
+
+            // Error check
+            if ( name == (void *) 0 )
+                goto no_mem;
+            
+            // Copy the name
+            strncpy(name, after_sl+1, len);
+
+            // Wrtie a null terminator
+            name[len] = '\0';
+        }
+
+        // Copy the full path
+        {
+
+            // Initialized data
+            size_t len = strlen(_path);
+
+            // Allocate memory for the full path string
+            full_path = realloc(0, sizeof(char) * ( len + 1 ));
+
+            // Error check
+            if ( full_path == (void *) 0 )
+                goto no_mem;
+            
+            // Copy the full path
+            strncpy(full_path, _path, len);
+
+            // Wrtie a null terminator
+            full_path[len] = '\0';
+        }   
+
+        // Get the file size
+        {
+            low_file_size = GetFileSize(file, &high_file_size);
+
+            file_size = (high_file_size << 32) | low_file_size;
+        }
+
+        // Populate the path struct
+        *p_path = (path)
+        {
+            .full_path               = full_path,
+            .name                    = name,
+            .type                    = path_type_file,
+            .p_next_content          = 0,
+            .p_parent_directory_path = p_parent_path,
+            .file = {
+                .file_size = file_size
+            }
+        };
+
+        // Clean up
+        CloseHandle(file);
     }
 
-    
-
-    
     #else
     #endif
+
+    // Return a pointer to the caller
+    *pp_path = p_path;
 
     // Success
     return 1;
 
+    no_mem:
     path_not_found:
     find_next_file_failed:
-    no_mem:
-
+    failed_to_open_file:
+    failed_to_get_file_attributes:
         return 0;
 
     // Error handling

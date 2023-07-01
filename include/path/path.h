@@ -31,21 +31,19 @@
 #define DLLEXPORT
 #endif
 
-// Forward declarations
-struct directory_item_s;
-
-// Type definitions
-/** !
- *  @brief The type definition of a directory struct
- */
-//typedef struct directory_item_s directory_item;
-typedef enum 
+// Enumeration definitions
+enum 
 {
     path_type_file      = 1,
     path_type_directory = 2
-} path_type;
+} path_type_e;
+
+// Forward declarations
 struct path_s;
-typedef struct path_s path;
+
+// Type definitions
+typedef struct path_s      path;
+typedef enum   path_type_e path_type;
 
 struct path_s
 {
@@ -58,7 +56,7 @@ struct path_s
     {
         struct
         {
-            size_t *file_size;
+            size_t file_size;
         } file;
         struct
         {
