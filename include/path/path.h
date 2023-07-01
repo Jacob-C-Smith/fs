@@ -32,18 +32,18 @@
 #endif
 
 // Enumeration definitions
-enum 
-{
-    path_type_file      = 1,
-    path_type_directory = 2
-} path_type_e;
+
 
 // Forward declarations
 struct path_s;
 
 // Type definitions
 typedef struct path_s      path;
-typedef enum   path_type_e path_type;
+typedef enum 
+{
+    path_type_file      = 1,
+    path_type_directory = 2
+} path_type;
 
 struct path_s
 {
