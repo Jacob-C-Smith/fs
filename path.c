@@ -5,7 +5,7 @@
 #include <windows.h>
 #include <process.h>
 #else
-#include <sys/dirent.h>
+#include <dirent.h>
 #include <sys/stat.h>
 #endif
 
@@ -335,94 +335,68 @@ int path_open ( path **pp_path, path *p_parent_path, const char *path_string )
 }
 
 // File system operations
-/** !
- * Make a directory in the specified path
- * 
- * @param p_path the specified path
- * @param path the name of the directory
- * 
- * @sa path_make_file
- * @sa path_remove
- * 
- * @return 1 on success, 0 on error
-*/
-DLLEXPORT int path_make_directory( path *p_path, const char *path );
+int path_make_directory( path *p_path, const char *path );
 
-/** !
- * Make a file in the specified path
- * 
- * @param p_path the specified path
- * @param path the name of the file
- * 
- * @sa path_make_directory
- * @sa path_remove
- * 
- * @return 1 on success, 0 on error
-*/
-DLLEXPORT int path_make_file( path *p_path, const char *path );
+int path_make_file( path *p_path, const char *path );
 
-/** !
- * Remove a file/directory from the specified path
- * 
- * @param p_path the specified path
- * @param path the name of the file/directory
- * 
- * @sa path_make_directory
- * 
- * @return 1 on success, 0 on error
-*/
-DLLEXPORT int path_remove ( path *p_path, const char *path );
+int path_remove ( path *p_path, const char *path );
 
-// Accessors
-/** !
- *  Is the path a directory or a file?
- *
- * @param pp_directory return
- *
- * @sa directory_file_size
- * @sa directory_name
- *
- * @return true if directory item is file, false if directory item is directory. False on error
- */
-DLLEXPORT bool path_is_file ( path *p_path );
+bool path_is_file ( path *p_path )
+{
 
-/** !
- *  Returns the number of items in a directory, if p_path is a directory, else the size of the file
- *
- * @param p_path the directory item
- *
- * @sa directory_is_file
- * @sa directory_name
- *
- * @return the size of the path on success, 0 on error
- */
-DLLEXPORT size_t path_size ( path *p_path );
+    // Argument check
+    if ( p_path == (void *) 0 )
+        goto no_path;
 
-/** !
- *  Returns the directory item name
- *
- * @param p_directory_item the directory item
- *
- * @sa directory_is_file
- * @sa directory_file_size
- *
- * @return the name of the file on success, 0 on error
- */
-DLLEXPORT const char *path_name ( path *p_path );
+    // Success
+    return ( p_path->type == path_type_file) ? true : false;
+
+    // Error handling
+    {
+
+        // Argument errors
+        {
+            no_path:
+                #ifndef NDEBUG
+                    printf("[path] Null pointer provided for parameter \"p_path\" in call to function \"%s\"\n", __FUNCTION__);
+                #endif
+
+                // Error
+                return 0;
+        }
+    }
+}
+
+size_t path_size ( path *p_path )
+{
+    
+    // Argument check
+    if ( p_path == (void *) 0 )
+        goto no_path;
+
+    // Success
+    return ( p_path->type == path_type_file) ? p_path->file.file_size : p_path->directory.directory_content_size;
+
+    // Error handling
+    {
+
+        // Argument errors
+        {
+            no_path:
+                #ifndef NDEBUG
+                    printf("[path] Null pointer provided for parameter \"p_path\" in call to function \"%s\"\n", __FUNCTION__);
+                #endif
+
+                // Error
+                return 0;
+        }
+    }
+}
+
+const char *path_name ( path *p_path );
 
 // Destructors
-/** !
- * Close a path
- * 
- * @param pp_path pointer to path pointer
- * 
- * @sa path_open
- * 
- * @return 1 on success, 0 on error
-*/
-DLLEXPORT int path_close ( path **pp_path );
-
-
+int path_close ( path **pp_path );
 
 /*
 int directory_create ( const char *name )
@@ -477,7 +451,7 @@ int directory_open ( directory **pp_directory, const char *path )
         // Iterate over each directory
         //while ((entry = readdir(dir)) != NULL)
         //{
-//
+        //
         //    // Initialized data
         //    size_t                   file_size     = 0,
         //                             file_name_len = strlen(entry->d_name);

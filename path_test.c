@@ -46,9 +46,11 @@ int run_tests ( void );
 int print_final_summary ( void );
 int print_test ( const char *scenario_name, const char *test_name, bool passed );
 bool test_path_open ( char *test_file, int (*expected_value_constructor) (path **), result_t expected );
+bool test_path_is_file ( char *path_string, int (*expected_path_constructor) (path **), result_t expected );
 result_t value_equals ( path *a, path *b );
 
 int test_path_open_cases ( char *text );
+int test_path_is_file_cases ( char *name );
 
 // Scenario constructors
 int construct_file ( path **pp_path );
@@ -85,7 +87,7 @@ int run_tests ( void )
     // test_path_remove("path_remove");
 
     // TODO: Test path_is_file
-    // test_path_is_file("path_is_file");
+    test_path_is_file_cases("path_is_file");
 
     // TODO: Test path_size
     // test_path_size("path_size");
@@ -120,8 +122,32 @@ int test_path_open_cases ( char *name )
     return 1;
 }
 
+int test_path_is_file_cases ( char *name )
+{
+
+    // Formatting
+    printf("Scenario: %s\n", name);
+    
+    // Print tests
+    print_test(name, "file.txt"       , test_path_is_file("test cases/file.txt"                 , construct_file           , true));
+    print_test(name, "file size.txt"  , test_path_is_file("test cases/file size.txt"            , construct_file_size      , true));
+    print_test(name, "directory"      , test_path_is_file("test cases/directory/"               , construct_directory      , false));
+    print_test(name, "directory weird", test_path_is_file("test cases/directory\\//\\///"       , construct_directory      , false));
+    print_test(name, "file not found" , test_path_is_file("test cases/this file isn't real.txt", 0                         , zero));
+    //print_test(name, "directory file" , test_path_open("test cases/directory file/"          , construct_directory_file , match));
+    //print_test(name, "directory files", test_path_open("test cases/directory files/"         , construct_directory_files, match));
+    //print_test(name, "directory mixed", test_path_open("test cases/directory mixed/"         , construct_directory_mixed, match));
+
+    // Print a test summary
+    print_final_summary();
+
+    // Success
+    return 1;
+}
+
 result_t path_equals ( path *a, path *b )
 {
+
     // Initialized data
     result_t ret = match;
 
@@ -317,6 +343,34 @@ bool test_path_open ( char *path_string, int (*expected_path_constructor) (path 
 
     // Success
     return (ret == expected);
+}
+
+bool test_path_is_file ( char *path_string, int (*expected_path_constructor) (path **), result_t expected )
+{
+
+    // Initialized data
+    path *p_expected_path = 0,
+         *p_result_path   = 0;
+    int   result_ret      = 0,
+          expected_ret    = 0;
+
+    // Construct the path
+    if ( expected_path_constructor )
+
+        // Call the path constructor
+        expected_path_constructor(&p_expected_path);
+
+    // Open the path
+    path_open(&p_result_path, 0, path_string);
+
+    // Check the result
+    result_ret = path_is_file(p_result_path);
+
+    // Check the expected
+    expected_ret = path_is_file(p_expected_path);
+
+    // Success
+    return (result_ret == expected_ret);
 }
 
 int print_test ( const char *scenario_name, const char *test_name, bool passed )
