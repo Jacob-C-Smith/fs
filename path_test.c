@@ -78,22 +78,22 @@ int run_tests ( void )
     test_path_open_cases("path_open");
 
     // TODO: Test path_make_directory
-    // test_path_make_directory("path_make_directory");
+    // test_path_make_directory_cases("path_make_directory");
 
     // TODO: Test path_make_file
-    // test_path_make_file("path_make_file");
+    // test_path_make_file_cases("path_make_file");
 
     // TODO: Test path_remove
-    // test_path_remove("path_remove");
+    // test_path_remove_cases("path_remove");
 
     // TODO: Test path_is_file
     test_path_is_file_cases("path_is_file");
 
     // TODO: Test path_size
-    // test_path_size("path_size");
+    // test_path_size_cases("path_size");
 
     // TODO: Test path_name
-    // test_path_name("path_name");
+    // test_path_name_cases("path_name");
 
     // Success
     return 1;
@@ -106,14 +106,14 @@ int test_path_open_cases ( char *name )
     printf("Scenario: %s\n", name);
     
     // Print tests
-    print_test(name, "file.txt"       , test_path_open("test cases/file.txt"                 , construct_file           , match));
-    print_test(name, "file size.txt"  , test_path_open("test cases/file size.txt"            , construct_file_size      , match));
-    print_test(name, "directory"      , test_path_open("test cases/directory/"               , construct_directory      , match));
-    print_test(name, "directory weird", test_path_open("test cases/directory\\//\\///"       , construct_directory      , match));
-    print_test(name, "file not found" , test_path_open("test cases/this file isn't real.txt", 0                         , zero));
-    //print_test(name, "directory file" , test_path_open("test cases/directory file/"          , construct_directory_file , match));
-    //print_test(name, "directory files", test_path_open("test cases/directory files/"         , construct_directory_files, match));
-    //print_test(name, "directory mixed", test_path_open("test cases/directory mixed/"         , construct_directory_mixed, match));
+    print_test(name, "file.txt"       , test_path_open("test cases/file.txt"                , construct_file           , match));
+    print_test(name, "file size.txt"  , test_path_open("test cases/file size.txt"           , construct_file_size      , match));
+    print_test(name, "directory"      , test_path_open("test cases/directory/"              , construct_directory      , match));
+    print_test(name, "directory weird", test_path_open("test cases/directory\\//\\///"      , construct_directory      , match));
+    print_test(name, "file not found" , test_path_open("test cases/this file isn't real.txt", 0                        , zero));
+    print_test(name, "directory file" , test_path_open("test cases/directory file/"         , construct_directory_file , match));
+    print_test(name, "directory files", test_path_open("test cases/directory files/"        , construct_directory_files, match));
+    //print_test(name, "directory mixed", test_path_open("test cases/directory mixed/"        , construct_directory_mixed, match));
 
     // Print a test summary
     print_final_summary();
@@ -192,7 +192,7 @@ int construct_file ( path **pp_path )
         return 0;  
 
     // Initialized data
-    path *p_path = realloc(0, sizeof(path));
+    path *p_path = PATH_REALLOC(0, sizeof(path));
 
     // Zero set
     memset(p_path, 0, sizeof(path));
@@ -230,7 +230,7 @@ int construct_file_size ( path **pp_path )
         return 0;  
 
     // Initialized data
-    path *p_path = realloc(0, sizeof(path));
+    path *p_path = PATH_REALLOC(0, sizeof(path));
 
     // Zero set
     memset(p_path, 0, sizeof(path));
@@ -268,7 +268,7 @@ int construct_directory  ( path **pp_path )
         return 0;  
 
     // Initialized data
-    path *p_path = realloc(0, sizeof(path));
+    path *p_path = PATH_REALLOC(0, sizeof(path));
 
     // Zero set
     memset(p_path, 0, sizeof(path));
@@ -302,6 +302,58 @@ int construct_directory  ( path **pp_path )
 int construct_directory_file  ( path **pp_path )
 {
     
+    // Argument check
+    if ( pp_path == (void *) 0 )
+        return 0;  
+
+    // Initialized data
+    path *p_path_dir = PATH_REALLOC(0, sizeof(path)),
+         *p_path_fil = PATH_REALLOC(0, sizeof(path));
+
+    // Zero set
+    memset(p_path_dir, 0, sizeof(path));
+    memset(p_path_fil, 0, sizeof(path));
+
+    // Error check
+    if ( p_path_dir == (void *) 0 )
+        return 0;  
+
+    // Error check
+    if ( p_path_fil == (void *) 0 )
+        return 0;  
+
+    // Populate the file struct
+    *p_path_fil = (path) 
+    {
+        .full_path = 0,
+        .name = "simple file.txt",
+        .type = path_type_file,
+        .p_next_content = 0,
+        .p_parent_directory_path = 0,
+        .file =
+        {
+            .file_size = 13
+        }
+    };
+
+    // Populate the path struct
+    *p_path_dir = (path) 
+    {
+        .full_path = 0,
+        .name = "directory file",
+        .type = path_type_directory,
+        .p_next_content = 0,
+        .p_parent_directory_path = 0,
+        .directory =
+        {
+            .directory_content_size = 0,
+            .p_directory_contents   = p_path_fil
+        }
+    };
+
+    // Return a pointer to the caller
+    *pp_path = p_path_dir;
+    
     // Success
     return 1;
 }
@@ -309,12 +361,184 @@ int construct_directory_file  ( path **pp_path )
 int construct_directory_files ( path **pp_path )
 {
     
+    // Argument check
+    if ( pp_path == (void *) 0 )
+        return 0;  
+
+    // Initialized data
+    path *p_path_dir   = PATH_REALLOC(0, sizeof(path)),
+         *p_path_file1 = PATH_REALLOC(0, sizeof(path)),
+         *p_path_file2 = PATH_REALLOC(0, sizeof(path)),
+         *p_path_file3 = PATH_REALLOC(0, sizeof(path));
+
+    // Zero set
+    memset(p_path_dir, 0, sizeof(path));
+    memset(p_path_file1, 0, sizeof(path));
+    memset(p_path_file2, 0, sizeof(path));
+    memset(p_path_file3, 0, sizeof(path));
+
+    // Error check
+    if ( p_path_dir == (void *) 0 )
+        return 0;  
+    if ( p_path_file1 == (void *) 0 )
+        return 0;  
+    if ( p_path_file2 == (void *) 0 )
+        return 0;  
+    if ( p_path_file3 == (void *) 0 )
+        return 0;  
+
+    // Populate the file struct
+    *p_path_file3 = (path) 
+    {
+        .full_path = 0,
+        .name = "file 3.txt",
+        .type = path_type_file,
+        .p_next_content = 0,
+        .p_parent_directory_path = 0,
+        .file =
+        {
+            .file_size = 6
+        }
+    };
+
+    // Populate the file struct
+    *p_path_file2 = (path) 
+    {
+        .full_path = 0,
+        .name = "file 2.txt",
+        .type = path_type_file,
+        .p_next_content = p_path_file3,
+        .p_parent_directory_path = 0,
+        .file =
+        {
+            .file_size = 8
+        }
+    };
+
+    // Populate the file struct
+    *p_path_file1 = (path) 
+    {
+        .full_path = 0,
+        .name = "file 1.txt",
+        .type = path_type_file,
+        .p_next_content = p_path_file2,
+        .p_parent_directory_path = 0,
+        .file =
+        {
+            .file_size = 5
+        }
+    };
+
+    // Populate the path struct
+    *p_path_dir = (path) 
+    {
+        .full_path = 0,
+        .name = "directory files",
+        .type = path_type_directory,
+        .p_next_content = 0,
+        .p_parent_directory_path = 0,
+        .directory =
+        {
+            .directory_content_size = 3,
+            .p_directory_contents   = p_path_file1
+        }
+    };
+
+    // Return a pointer to the caller
+    *pp_path = p_path_dir;
+    
     // Success
     return 1;
 }
 
 int construct_directory_mixed ( path **pp_path )
 {
+    
+    // Argument check
+    if ( pp_path == (void *) 0 )
+        return 0;  
+
+    // Initialized data
+    path *p_path_dir     = PATH_REALLOC(0, sizeof(path)),
+         *p_path_file1   = PATH_REALLOC(0, sizeof(path)),
+         *p_path_file2   = PATH_REALLOC(0, sizeof(path)),
+         *p_path_dir_dir = PATH_REALLOC(0, sizeof(path));
+
+    // Error check
+    if ( p_path_dir == (void *) 0 )
+        return 0;  
+    if ( p_path_file1 == (void *) 0 )
+        return 0;  
+    if ( p_path_file2 == (void *) 0 )
+        return 0;  
+    if ( p_path_dir_dir == (void *) 0 )
+        return 0;  
+
+    // Zero set
+    memset(p_path_dir    , 0, sizeof(path));
+    memset(p_path_dir_dir, 0, sizeof(path));
+    memset(p_path_file1  , 0, sizeof(path));
+    memset(p_path_file2  , 0, sizeof(path));
+
+    // Populate the file struct
+    *p_path_dir_dir = (path) 
+    {
+        .full_path = 0,
+        .name = "directory",
+        .type = path_type_file,
+        .p_next_content = p_path_file1,
+        .p_parent_directory_path = 0,
+        .file =
+        {
+            .file_size = 6
+        }
+    };
+
+    // Populate the file struct
+    *p_path_file2 = (path) 
+    {
+        .full_path = 0,
+        .name = "file 2.txt",
+        .type = path_type_file,
+        .p_next_content = 0,
+        .p_parent_directory_path = 0,
+        .file =
+        {
+            .file_size = 8
+        }
+    };
+
+    // Populate the file struct
+    *p_path_file1 = (path) 
+    {
+        .full_path = 0,
+        .name = "file 1.txt",
+        .type = path_type_file,
+        .p_next_content = p_path_file2,
+        .p_parent_directory_path = 0,
+        .file =
+        {
+            .file_size = 5
+        }
+    };
+
+    // Populate the path struct
+    *p_path_dir = (path) 
+    {
+        .full_path = 0,
+        .name = "directory mixed",
+        .type = path_type_directory,
+        .p_next_content = 0,
+        .p_parent_directory_path = 0,
+        .directory =
+        {
+            .directory_content_size = 3,
+            .p_directory_contents   = p_path_dir_dir
+        }
+    };
+
+    // Return a pointer to the caller
+    *pp_path = p_path_dir;
     
     // Success
     return 1;
@@ -341,6 +565,11 @@ bool test_path_open ( char *path_string, int (*expected_path_constructor) (path 
     // Check for equivalence
     ret = path_equals(p_expected_path, p_result_path);
 
+    // Close the path
+    path_close(&p_result_path);
+
+    // TODO: Call the tester deallocator
+
     // Success
     return (ret == expected);
 }
@@ -363,7 +592,7 @@ bool test_path_is_file ( char *path_string, int (*expected_path_constructor) (pa
     // Open the path
     path_open(&p_result_path, 0, path_string);
 
-    // Check the result
+    // Is the path a file?
     result_ret = path_is_file(p_result_path);
 
     // Check the expected
@@ -378,6 +607,8 @@ int print_test ( const char *scenario_name, const char *test_name, bool passed )
 
     // Initialized data
     printf("%s %-75s %s\n",scenario_name, test_name, (passed) ? "PASS" : "FAIL");
+
+    fflush(stdout);
 
     // Increment the counters
     if ( passed ) 

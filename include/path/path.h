@@ -31,14 +31,24 @@
 #define DLLEXPORT
 #endif
 
-// Enumeration definitions
+// Set the reallocator for the dict submodule
+#ifdef DICT_REALLOC
+    #undef DICT_REALLOC
+    #define DICT_REALLOC(p, sz) realloc(p, sz)
+#endif
 
+// Memory management macro
+#ifndef PATH_REALLOC
+    #define PATH_REALLOC(p, sz) realloc(p,sz)
+#endif
 
 // Forward declarations
 struct path_s;
 
 // Type definitions
-typedef struct path_s      path;
+typedef struct path_s path;
+
+// Enumeration definitions
 typedef enum 
 {
     path_type_file      = 1,

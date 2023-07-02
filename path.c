@@ -9,6 +9,69 @@
 #include <sys/stat.h>
 #endif
 
+// Helper functions
+int path_append_file ( path **pp_head, path *p_path )
+{
+
+    // Argument check
+    if ( pp_head == (void *) 0 ) goto no_head;
+    if ( p_path  == (void *) 0 ) goto no_path;
+    
+    // State check
+    if ( *pp_head == (void *) 0 )
+        goto no_head_p;
+
+    // Initialized data
+    path *i_path = *pp_head;
+
+    // Walk to the end of the list
+    while ( i_path->p_next_content )
+    { 
+        i_path = i_path->p_next_content;
+    };
+
+    // Append the content
+    i_path->p_next_content = p_path;
+
+    // Avoid circles
+    i_path->p_next_content->p_next_content = 0;
+
+    // Success
+    return 1;
+
+    // Set the head
+    no_head_p:
+        
+        *pp_head = p_path;
+
+        // Success
+        return 1;
+
+    // Error handling
+    {
+
+        // Arugment errors
+        {
+
+            no_head:
+                #ifndef NDEBUG
+                    printf("[path] Null pointer provided for parameter \"p_head\" in call to function \"%s\"\n", __FUNCTION__);
+                #endif
+
+                // Error
+                return 0;
+
+            no_path:
+                #ifndef NDEBUG
+                    printf("[path] Null pointer provided for parameter \"p_path\" in call to function \"%s\"\n", __FUNCTION__);
+                #endif
+
+                // Error
+                return 0;
+        }
+    }
+}
+
 // Constructors
 int path_open ( path **pp_path, path *p_parent_path, const char *path_string )
 {
@@ -25,10 +88,15 @@ int path_open ( path **pp_path, path *p_parent_path, const char *path_string )
     #ifdef _WIN64
 
     // Windows initialized data
-    WIN32_FIND_DATA find_data      = { 0 };
-    char            _path[2048]    = "";
-    HANDLE          find_handle    = 0;
-    DWORD           path_attribute = 0;
+    WIN32_FIND_DATA  find_data      = { 0 };
+    char             _path[2048]    = "";
+    HANDLE           find_handle    = 0;
+    DWORD            path_attribute = 0;
+    DWORD            low_file_size  = 0;
+    DWORD            high_file_size = 0;
+    size_t           file_size      = 0;
+    char            *full_path      = 0;
+    char            *name           = 0;
     #else
 
     // Unix like initialized data
@@ -42,7 +110,7 @@ int path_open ( path **pp_path, path *p_parent_path, const char *path_string )
     ////////////////////////////
 
     // Allocate memory for the path
-    p_path = realloc(0, sizeof(path));
+    p_path = PATH_REALLOC(0, sizeof(path));
 
     // Error check
     if ( p_path == (void *) 0 )
@@ -65,26 +133,11 @@ int path_open ( path **pp_path, path *p_parent_path, const char *path_string )
     if ( path_attribute & FILE_ATTRIBUTE_DIRECTORY )
     {
         // Initialized data
-        DWORD   low_file_size  = 0;
-        DWORD   high_file_size = 0;
-        size_t  file_size      = 0;
-        char   *full_path      = 0;
-        char   *name           = 0;
-        /*HANDLE  file           = CreateFile(
-            _path,
-            GENERIC_READ | GENERIC_WRITE,
-            0,
-            NULL,
-            OPEN_EXISTING,
-            FILE_ATTRIBUTE_NORMAL,
-            NULL
-        );
-
-        // Error check
-        if ( file == INVALID_HANDLE_VALUE )
-            goto failed_to_open_file;
-        */
-       
+        
+        size_t  directory_item_count = 0;
+        path   *p_directory_contents = 0;
+        path   *p_contents           = 0;
+               
         // Copy the name
         {
 
@@ -107,7 +160,7 @@ int path_open ( path **pp_path, path *p_parent_path, const char *path_string )
             }
 
             // Allocate memory for name
-            name = realloc(0, sizeof(char) * ( len )); // Don't need to allocate a null terminator
+            name = PATH_REALLOC(0, sizeof(char) * ( len + 1 )); // Don't need to allocate a null terminator
 
             // Error check
             if ( name == (void *) 0 )
@@ -125,9 +178,9 @@ int path_open ( path **pp_path, path *p_parent_path, const char *path_string )
 
             // Initialized data
             size_t len = strlen(_path);
-
+            
             // Allocate memory for the full path string
-            full_path = realloc(0, sizeof(char) * ( len + 1 ));
+            full_path = PATH_REALLOC(0, sizeof(char) * ( len + 1024 ));
 
             // Error check
             if ( full_path == (void *) 0 )
@@ -138,12 +191,18 @@ int path_open ( path **pp_path, path *p_parent_path, const char *path_string )
 
             // Wrtie a null terminator
             full_path[len] = '\0';
+
+            // Wrtie a null terminator
+            strncat(full_path, "\\*.*", 4);
         }   
 
         // Recursively construct paths from the directory
         {
+
+            
+
             // Get the first file in a directory
-            find_handle = FindFirstFile(_path, &find_data);
+            find_handle = FindFirstFileA(full_path, &find_data);
 
             // Error check
             if ( find_handle == INVALID_HANDLE_VALUE )
@@ -152,44 +211,53 @@ int path_open ( path **pp_path, path *p_parent_path, const char *path_string )
             // Parse the path as a directory
             if ( find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY )
             {
-                /*
+                
                 // Skip past "." and ".."
-                if ( FindNextFile(find_handle, &find_data) == 0 )
+                if ( FindNextFileA(find_handle, &find_data) == 0 )
                     goto find_next_file_failed;
 
                 // Iterate over each item in the directory
-                while ( FindNextFile(find_handle, &find_data) )
+                while ( FindNextFileA(find_handle, &find_data) )
                 {
 
                     // Initialized data
-                    path *i_path = realloc(0, sizeof(path));
+                    path *i_path = PATH_REALLOC(0, sizeof(path));
 
                     // Error check
                     if ( i_path == (void *) 0 )
                         goto no_mem;
 
+                    // Increment the directory counter
+                    directory_item_count++;
+
+                    // Zero set
+                    memset(i_path, 0, sizeof(path));
+
                     // Build the file path 
-                    sprintf(_path, "%s\\%s", path_string, find_data.cFileName);
+                    sprintf(full_path, "%s\\%s", path_string, find_data.cFileName);
 
                     // Parse the item as a directory
                     if ( find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY )
                     {
-                        printf("Directory: %s\n", _path);
-
-                        path_open(pp_path, p_path, _path);
+                        //printf("Directory: %s\n", full_path);
+                        //fflush(stdout);
+                        path_open(&p_contents, p_path, full_path);
+                        path_append_file(&p_directory_contents, p_contents);
                     }
 
                     // Parse the item as a file
                     else
                     {
-                        printf("File: %s\n", _path);
-                        path_open(pp_path, p_path, _path);
+                        //printf("File: %s\n", full_path);
+                        //fflush(stdout);
+                        path_open(&p_contents, p_path, full_path);
+                        path_append_file(&p_directory_contents, p_contents);
                     }
                 }
 
                 // Clean up the scope
                 FindClose(find_handle);
-                */
+                
             }
         }
 
@@ -199,10 +267,10 @@ int path_open ( path **pp_path, path *p_parent_path, const char *path_string )
             .full_path               = full_path,
             .name                    = name,
             .type                    = path_type_directory,
-            .p_next_content          = 0,
             .p_parent_directory_path = p_parent_path,
             .directory = {
-                0
+                .p_directory_contents   = p_directory_contents,
+                .directory_content_size = directory_item_count
             }
         };
 
@@ -215,12 +283,7 @@ int path_open ( path **pp_path, path *p_parent_path, const char *path_string )
     {
 
         // Initialized data
-        DWORD   low_file_size  = 0;
-        DWORD   high_file_size = 0;
-        size_t  file_size      = 0;
-        char   *full_path      = 0;
-        char   *name           = 0;
-        HANDLE  file           = CreateFile(
+        HANDLE file = CreateFile(
             _path,
             GENERIC_READ | GENERIC_WRITE,
             0,
@@ -245,7 +308,7 @@ int path_open ( path **pp_path, path *p_parent_path, const char *path_string )
             size_t  len          = strlen(after_sl)-1;
 
             // Allocate memory for name
-            name = realloc(0, sizeof(char) * ( len )); // Don't need to allocate a null terminator
+            name = PATH_REALLOC(0, sizeof(char) * ( len + 1 ));
 
             // Error check
             if ( name == (void *) 0 )
@@ -265,7 +328,7 @@ int path_open ( path **pp_path, path *p_parent_path, const char *path_string )
             size_t len = strlen(_path);
 
             // Allocate memory for the full path string
-            full_path = realloc(0, sizeof(char) * ( len + 1 ));
+            full_path = PATH_REALLOC(0, sizeof(char) * ( len + 1 ));
 
             // Error check
             if ( full_path == (void *) 0 )
@@ -375,7 +438,7 @@ size_t path_size ( path *p_path )
         goto no_path;
 
     // Success
-    return ( p_path->type == path_type_file) ? p_path->file.file_size : p_path->directory.directory_content_size;
+    return ( p_path->type == path_type_file ) ? p_path->file.file_size : p_path->directory.directory_content_size;
 
     // Error handling
     {
@@ -393,10 +456,108 @@ size_t path_size ( path *p_path )
     }
 }
 
-const char *path_name ( path *p_path );
+const char *path_name ( path *p_path )
+{
+    // Argument check
+    if ( p_path == (void *) 0 )
+        goto no_path;
+
+    // Success
+    return p_path->name;
+
+    // Error handling
+    {
+
+        // Argument errors
+        {
+            no_path:
+                #ifndef NDEBUG
+                    printf("[path] Null pointer provided for parameter \"p_path\" in call to function \"%s\"\n", __FUNCTION__);
+                #endif
+
+                // Error
+                return 0;
+        }
+    }
+}
 
 // Destructors
-int path_close ( path **pp_path );
+int path_close ( path **pp_path )
+{
+
+    // Argument check
+    if ( pp_path == (void *) 0 )
+        goto no_path;
+    
+    // Initialized data
+    path *p_path = *pp_path;
+
+    // Error check
+    if ( p_path == (void *) 0 )
+        goto pointer_to_null_pointer;
+
+    // No more pointer for caller
+    *pp_path = 0;
+
+    // Free the full path string
+    if ( p_path->full_path )
+        if ( PATH_REALLOC(p_path->full_path, 0) )
+            goto failed_to_free;
+
+    // Free the name
+    if ( PATH_REALLOC(p_path->name, 0) )
+        goto failed_to_free;
+
+    // Free the next content
+    if ( p_path->p_next_content )
+        if ( path_close(&p_path->p_next_content) == 0 )
+            goto failed_to_recursively_free_path_contents;
+
+    // Free the path
+    if ( PATH_REALLOC(p_path, 0) ) 
+        goto failed_to_free;
+
+    // Success
+    return 1;
+
+    failed_to_recursively_free_path_contents:
+        return 0;
+
+    // Error handling
+    {
+
+        // Argument errors
+        {
+            no_path:
+                #ifndef NDEBUG
+                    printf("[path] Null pointer provided for parameter \"pp_path\" in call to function \"%s\"\n", __FUNCTION__);
+                #endif
+
+                // Error
+                return 0;
+            
+            pointer_to_null_pointer:
+                #ifndef NDEBUG
+                    printf("[path] Parameter \"pp_path\" points to null pointer in call to function \"%s\"\n", __FUNCTION__);
+                #endif
+
+                // Error
+                return 0;
+                
+        }
+
+        // Standard library errors
+        {
+            failed_to_free:
+                #ifndef NDEBUG
+                    printf("[Standard Library] Call to \"realloc\" returned an erroneous value in call to function \"%s\"\n", __FUNCTION__);
+                #endif
+
+                // Error
+                return 0;
+        }
+    }
+}
 
 /*
 int directory_create ( const char *name )
