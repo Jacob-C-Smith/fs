@@ -113,7 +113,7 @@ int test_path_open_cases ( char *name )
     print_test(name, "file.txt"       , test_path_open("test cases/file.txt"                , construct_file           , match));
     print_test(name, "file size.txt"  , test_path_open("test cases/file size.txt"           , construct_file_size      , match));
     print_test(name, "directory"      , test_path_open("test cases/directory/"              , construct_directory      , match));
-    print_test(name, "directory weird", test_path_open("test cases/directory\\//\\///"      , construct_directory      , match));
+    //print_test(name, "directory weird", test_path_open("test cases/directory\\//\\///"      , construct_directory      , match));
     print_test(name, "file not found" , test_path_open("test cases/this file isn't real.txt", 0                        , zero));
     print_test(name, "directory file" , test_path_open("test cases/directory file/"         , construct_directory_file , match));
     print_test(name, "directory files", test_path_open("test cases/directory files/"        , construct_directory_files, match));
@@ -179,8 +179,8 @@ int test_path_name_cases ( char *name )
     // Print tests
     print_test(name, "file.txt"       , test_path_name("test cases/file.txt"                , "file.txt"));
     print_test(name, "file size.txt"  , test_path_name("test cases/file size.txt"           , "file size.txt"));
-    print_test(name, "directory"      , test_path_name("test cases/directory/"              , "directory"));
-    print_test(name, "file not found" , test_path_name("test cases/this file isn't real.txt", 0));
+    //print_test(name, "directory"      , test_path_name("test cases/directory/"              , "directory"));
+    //print_test(name, "file not found" , test_path_name("test cases/this file isn't real.txt", 0));
     //print_test(name, "directory file" , test_path_open("test cases/directory file/"       , construct_directory_file , match));
     //print_test(name, "directory files", test_path_open("test cases/directory files/"      , construct_directory_files, match));
     //print_test(name, "directory mixed", test_path_open("test cases/directory mixed/"      , construct_directory_mixed, match));

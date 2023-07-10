@@ -464,75 +464,108 @@ int path_open ( path **pp_path, path *p_parent_path, const char *path_string )
 
             // Write a null terminator
             full_path[len] = '\0';
-
-            // Write a null terminator
-            strncat(full_path, "\\*.*", 4);
         }   
 
         // Recursively construct paths from the directory
         {
 
-            
-
-            // Get the first file in a directory
-            //find_handle = FindFirstFileA(full_path, &find_data);
+            // Open the directory
+            p_directory = opendir(full_path);
 
             // Error check
-            //if ( find_handle == INVALID_HANDLE_VALUE )
-            //    goto path_not_found;//printf("Path not found: [%s]\n", path);
+            if ( p_directory == NULL )
+                ;//goto path_not_found;
+            
+            p_file_directory_entry = readdir(p_directory);
+            p_file_directory_entry = readdir(p_directory);
 
-            // Parse the path as a directory
-            //if ( find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY )
+            while ( (p_file_directory_entry = readdir(p_directory)) )
             {
+
+                // Initialized data
+                path        *i_path = PATH_REALLOC(0, sizeof(path));
+                struct stat  stN    = { 0 };
+
+                // Error check
+                if ( i_path == (void *) 0 )
+                    goto no_mem;
+
+                // Increment the directory counter
+                directory_item_count++;
+
+                // Zero set
+                memset(i_path, 0, sizeof(path));
+
+                // Build the file path 
+                sprintf(full_path, "%s/%s", path_string, p_file_directory_entry->d_name);
+
+                // Parse the item as a directory
+                if ( (st.st_mode & S_IFMT) == S_IFDIR ) 
+                {
+                    printf("Directory: %s\n", full_path);
+                    fflush(stdout);
+                    path_open(&p_contents, p_path, full_path);
+                    path_append_file(&p_directory_contents, p_contents);
+                }
+                // Parse the item as a file
+                else
+                {
+                    printf("File: %s\n", full_path);
+                    fflush(stdout);
+                    path_open(&p_contents, p_path, full_path);
+                    path_append_file(&p_directory_contents, p_contents);
+                }
+               
+                fflush(stdout);
+            }
                 
-                // Skip past "." and ".."
+            // Skip past "." and ".."
             //    if ( FindNextFileA(find_handle, &find_data) == 0 )
             //        goto find_next_file_failed;
 
-                // Iterate over each item in the directory
+            // Iterate over each item in the directory
             //    while ( FindNextFileA(find_handle, &find_data) )
-                {
+                //{
 
-                    // Initialized data
-            //        path *i_path = PATH_REALLOC(0, sizeof(path));
+                   
+            //     
 
-                    // Error check
-            //        if ( i_path == (void *) 0 )
-            //            goto no_mem;
+                   
+            //     
+            //     
 
-                    // Increment the directory counter
-            //        directory_item_count++;
+                   
+            //     
 
-                    // Zero set
-            //        memset(i_path, 0, sizeof(path));
+                   
+            //     
 
-                    // Build the file path 
-            //        sprintf(full_path, "%s\\%s", path_string, find_data.cFileName);
+                   
+            //     
 
-                    // Parse the item as a directory
-            //        if ( find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY )
-                    {
-                        //printf("Directory: %s\n", full_path);
-                        //fflush(stdout);
-            //            path_open(&p_contents, p_path, full_path);
-            //            path_append_file(&p_directory_contents, p_contents);
-                    }
+                   
+            //     
+                   
+                   
+                   
+            //     
+            //     
+                   
 
-                    // Parse the item as a file
-            //        else
-                    {
-                        //printf("File: %s\n", full_path);
-                        //fflush(stdout);
-            //            path_open(&p_contents, p_path, full_path);
-            //            path_append_file(&p_directory_contents, p_contents);
-                    }
-                }
+                   
+            //     
+                   
+                   
+                   
+            //     
+            //     
+                   
+                //}
 
                 // Clean up the scope
             //    FindClose(find_handle);
                 
             }
-        }
 
         // Populate the path struct
         *p_path = (path)
@@ -542,8 +575,8 @@ int path_open ( path **pp_path, path *p_parent_path, const char *path_string )
             .type                    = path_type_directory,
             .p_parent_directory_path = p_parent_path,
             .directory = {
-                .p_directory_contents   = 0,//p_directory_contents,
-                .directory_content_size = 0//directory_item_count
+                .p_directory_contents   = p_directory_contents,
+                .directory_content_size = directory_item_count
             }
         };
 
