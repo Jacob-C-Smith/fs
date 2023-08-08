@@ -1,3 +1,9 @@
 [submodule "extern/dict"]
 	path = extern/dict
 	url = https://github.com/Jacob-C-Smith/dict
+[submodule "extern/sync"]
+	path = extern/sync
+	url = https://github.com/Jacob-C-Smith/sync
+[submodule "extern/stack"]
+	path = extern/stack
+	url = https://github.com/Jacob-C-Smith/stack

@@ -214,7 +214,7 @@ result_t path_equals ( path *a, path *b )
         ret = 0;
 
     // Check for file equivalence
-    if ( a->type == path_type_file )
+    if ( a->type == PATH_TYPE_FILE )
     {
 
         // Check for equivalent size
@@ -253,7 +253,7 @@ int construct_file ( path **pp_path )
     {
         .full_path = 0,
         .name = "file.txt",
-        .type = path_type_file,
+        .type = PATH_TYPE_FILE,
         .p_next_content = 0,
         .p_parent_directory_path = 0,
         .file =
@@ -291,7 +291,7 @@ int construct_file_size ( path **pp_path )
     {
         .full_path = 0,
         .name = "file size.txt",
-        .type = path_type_file,
+        .type = PATH_TYPE_FILE,
         .p_next_content = 0,
         .p_parent_directory_path = 0,
         .file =
@@ -329,7 +329,7 @@ int construct_directory  ( path **pp_path )
     {
         .full_path = 0,
         .name = "directory",
-        .type = path_type_directory,
+        .type = PATH_TYPE_DIRECTORY,
         .p_next_content = 0,
         .p_parent_directory_path = 0,
         .directory =
@@ -374,7 +374,7 @@ int construct_directory_file  ( path **pp_path )
     {
         .full_path = 0,
         .name = "simple file.txt",
-        .type = path_type_file,
+        .type = PATH_TYPE_FILE,
         .p_next_content = 0,
         .p_parent_directory_path = 0,
         .file =
@@ -388,7 +388,7 @@ int construct_directory_file  ( path **pp_path )
     {
         .full_path = 0,
         .name = "directory file",
-        .type = path_type_directory,
+        .type = PATH_TYPE_DIRECTORY,
         .p_next_content = 0,
         .p_parent_directory_path = 0,
         .directory =
@@ -439,7 +439,7 @@ int construct_directory_files ( path **pp_path )
     {
         .full_path = 0,
         .name = "file 3.txt",
-        .type = path_type_file,
+        .type = PATH_TYPE_FILE,
         .p_next_content = 0,
         .p_parent_directory_path = 0,
         .file =
@@ -453,7 +453,7 @@ int construct_directory_files ( path **pp_path )
     {
         .full_path = 0,
         .name = "file 2.txt",
-        .type = path_type_file,
+        .type = PATH_TYPE_FILE,
         .p_next_content = p_path_file3,
         .p_parent_directory_path = 0,
         .file =
@@ -467,7 +467,7 @@ int construct_directory_files ( path **pp_path )
     {
         .full_path = 0,
         .name = "file 1.txt",
-        .type = path_type_file,
+        .type = PATH_TYPE_FILE,
         .p_next_content = p_path_file2,
         .p_parent_directory_path = 0,
         .file =
@@ -481,7 +481,7 @@ int construct_directory_files ( path **pp_path )
     {
         .full_path = 0,
         .name = "directory files",
-        .type = path_type_directory,
+        .type = PATH_TYPE_DIRECTORY,
         .p_next_content = 0,
         .p_parent_directory_path = 0,
         .directory =
@@ -532,7 +532,7 @@ int construct_directory_mixed ( path **pp_path )
     {
         .full_path = 0,
         .name = "directory",
-        .type = path_type_file,
+        .type = PATH_TYPE_FILE,
         .p_next_content = p_path_file1,
         .p_parent_directory_path = 0,
         .file =
@@ -546,7 +546,7 @@ int construct_directory_mixed ( path **pp_path )
     {
         .full_path = 0,
         .name = "file 2.txt",
-        .type = path_type_file,
+        .type = PATH_TYPE_FILE,
         .p_next_content = 0,
         .p_parent_directory_path = 0,
         .file =
@@ -560,7 +560,7 @@ int construct_directory_mixed ( path **pp_path )
     {
         .full_path = 0,
         .name = "file 1.txt",
-        .type = path_type_file,
+        .type = PATH_TYPE_FILE,
         .p_next_content = p_path_file2,
         .p_parent_directory_path = 0,
         .file =
@@ -574,7 +574,7 @@ int construct_directory_mixed ( path **pp_path )
     {
         .full_path = 0,
         .name = "directory mixed",
-        .type = path_type_directory,
+        .type = PATH_TYPE_DIRECTORY,
         .p_next_content = 0,
         .p_parent_directory_path = 0,
         .directory =
