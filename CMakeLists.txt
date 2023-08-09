@@ -30,6 +30,32 @@ if ( NOT "${HAS_STACK}")
     set(HAS_STACK true PARENT_SCOPE)
 endif()
 
+# Find the array module
+if ( NOT "${HAS_ARRAY}")
+    
+    # Log
+    message("[path] Adding array project")
+    
+    # Add the array directory
+    add_subdirectory(${CMAKE_SOURCE_DIR}/extern/array ${CMAKE_SOURCE_DIR}/build/array)
+
+    # Let any parent project know that this project has array
+    set(HAS_ARRAY true PARENT_SCOPE)
+endif()
+
+# Find the json module
+if ( NOT "${HAS_JSON}")
+    
+    # Log
+    message("[path] Adding json project")
+    
+    # Add the json directory
+    add_subdirectory(${CMAKE_SOURCE_DIR}/extern/json ${CMAKE_SOURCE_DIR}/build/json)
+
+    # Let any parent project know that this project has json
+    set(HAS_JSON true PARENT_SCOPE)
+endif()
+
 # Find the dict module
 if ( NOT "${HAS_DICT}")
     
@@ -72,11 +98,11 @@ add_dependencies(path_example stack dict sync)
 target_include_directories(path_example PUBLIC include include/path ${CMAKE_SOURCE_DIR}/extern/stack/include/ ${CMAKE_SOURCE_DIR}/extern/dict/include/ ${CMAKE_SOURCE_DIR}/extern/sync/include/)
 target_link_libraries(path_example path stack dict sync)
 
-## Add source to the tester
-# add_executable (path_test "path_test.c" "path.c")
-# add_dependencies(path_test stack dict sync)
-# target_include_directories(path_test PUBLIC include include/path ${CMAKE_SOURCE_DIR}/extern/stack/include/ ${CMAKE_SOURCE_DIR}/extern/dict/include/ ${CMAKE_SOURCE_DIR}/extern/sync/include/)
-# target_link_libraries(path_test path stack dict sync)
+# Add source to the tester
+ add_executable (path_test "path_test.c" "path.c" )
+ add_dependencies(path_test stack dict sync)
+ target_include_directories(path_test PUBLIC include include/path ${CMAKE_SOURCE_DIR}/extern/array/include/ ${CMAKE_SOURCE_DIR}/extern/stack/include/ ${CMAKE_SOURCE_DIR}/extern/dict/include/ ${CMAKE_SOURCE_DIR}/extern/json/include/ ${CMAKE_SOURCE_DIR}/extern/sync/include/)
+ target_link_libraries(path_test path json array stack dict sync)
 
 # Add source to this project's library
 add_library (path SHARED "path.c")

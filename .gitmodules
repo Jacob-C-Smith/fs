@@ -7,3 +7,7 @@
 [submodule "extern/stack"]
 	path = extern/stack
 	url = https://github.com/Jacob-C-Smith/stack
+[submodule "extern/json"]
+	path = extern/json
+[submodule "extern/array"]
+	path = extern/array
