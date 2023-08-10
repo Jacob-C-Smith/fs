@@ -9,5 +9,7 @@
 	url = https://github.com/Jacob-C-Smith/stack
 [submodule "extern/json"]
 	path = extern/json
+	url = https://github.com/Jacob-C-Smith/json
 [submodule "extern/array"]
 	path = extern/array
+	url = https://github.com/Jacob-C-Smith/array
