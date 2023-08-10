@@ -4,16 +4,165 @@
 // Structure definitions
 struct path_s
 {
-    char      *full_path; // Full path to the file
-    char      *name;      // Name of the path
-    path_type  type;      // Type of the path
-    stack     *history;   // Enables path push and pop
+
+    // Path type
+    path_type type; 
+
+    // Path as text
+    struct 
+    {
+        bool    dirty;
+        char   *text,
+               *text_name;
+        size_t  text_max_len,
+                text_len,
+                i_text_name;
+    } full_path;
+    
+    // Path history
+    struct
+    {
+        void *data;
+        enum {
+            PATH_HISTORY_STACK,
+            PATH_HISTORY_QUEUE
+        } type;
+    } history;
+
+    // Path 
     union
     {
+        bool    dirty;
         size_t  file;      // Size of the file in bytes
         dict   *directory; // Directory contents in a dict as < path_name_text : path_type >
-    };
+    } data;
 };
+
+int path_update_full_path ( path *p_path )
+{
+
+    // Argument check
+    if ( p_path == (void *) 0 ) goto no_path;
+
+    // Initialized data
+    char *slash_name = 1+strrchr(p_path->full_path.text, '/');
+
+    // Get the name of the path
+    p_path->full_path.text_name = slash_name;
+
+    // Get the index of the last / character
+    p_path->full_path.i_text_name = ( slash_name - p_path->full_path.text_name );
+
+    // Clear dirty flag
+    p_path->full_path.dirty = false;
+
+    // Success
+    return 1;
+
+    no_path:
+
+    // Error
+    return 0;
+}
+
+int path_update_data ( path *p_path ) 
+{
+
+    // Argument check
+    #ifndef NDEBUG
+        if ( p_path == (void *) 0 ) goto no_path;
+    #endif
+
+    // Initialized data
+    size_t path_name_len = strlen(p_path->full_path.text_name);
+    size_t full_path_len = strlen(p_path->full_path.text);
+    struct stat st = { 0 };
+
+    // File status
+    stat(p_path->full_path.text, &st);
+
+    // Directory
+    if ( (st.st_mode & S_IFMT) == S_IFDIR )
+    {
+
+        // Initialized data
+        dict *p_dict      = 0;
+        DIR  *p_directory = { 0 };
+        struct dirent *p_file_directory_entry;
+
+        // State check
+        if ( p_path->type != PATH_TYPE_DIRECTORY )
+        {
+
+            // Set the type            
+            p_path->type = PATH_TYPE_DIRECTORY;
+            
+            // Allocate a dictionary
+            dict_construct(&p_dict, 32);
+
+        }
+
+        // Free the contents of the old dictionary
+        if ( dict_clear(p_dict) == 0 ) goto failed_to_clear_dict;
+
+        // Open the directory
+        p_directory = opendir(p_path->full_path.text);
+
+        // Error check
+        if ( p_directory == NULL ) goto path_not_found;
+
+        // Skip "."
+        p_file_directory_entry = readdir(p_directory);
+
+        // Skip ".."
+        p_file_directory_entry = readdir(p_directory);
+
+        // Iterate over each path
+        while ( ( p_file_directory_entry = readdir(p_directory) ) )
+        {
+
+
+            // Build the path 
+            size_t path_len = strlen(p_file_directory_entry->d_name);
+            char *p_i_path_text = PATH_REALLOC(0, path_len+1);
+
+            strncpy(p_i_path_text, p_file_directory_entry->d_name, path_len);
+
+            // File status
+            stat(p_path->full_path.text, &st);
+
+            // Parse the path as a directory
+            if ( (st.st_mode & S_IFMT) == S_IFDIR ) dict_add(p_dict, p_i_path_text, (void *)PATH_TYPE_DIRECTORY);
+
+            // Parse the path as a file
+            else dict_add(p_dict, p_i_path_text, (void *)PATH_TYPE_FILE);
+
+        }
+
+        p_path->type           = PATH_TYPE_DIRECTORY;
+        p_path->data.directory = p_dict;
+    }
+
+    // File
+    else if ( (st.st_mode & S_IFMT) == S_IFREG )
+    {
+        p_path->type = PATH_TYPE_FILE;
+
+        p_path->data.file = st.st_size;
+    }
+
+    // Clear the dirty bit
+    p_path->data.dirty = false;
+
+    //  Success
+    return 1;
+
+    no_path:
+    failed_to_clear_dict:
+    path_not_found:
+
+    return 0;
+}
 
 void pfn_path_free( void *vp_memory )
 {
@@ -79,9 +228,46 @@ int path_open ( path **pp_path, const char *path_string )
         if ( pp_path == (void *) 0 ) goto no_path;
     #endif
 
-    // Platform independent initialized data
+    // Initialized data
     path *p_path = 0;
 
+    // Navigate 
+    path_navigate(&p_path, path_string);
+
+    // Return a pointer to the caller
+    *pp_path = p_path;
+
+    // Success
+    return 1;
+
+    // Error handling
+    {
+
+        // Argument errors
+        {
+            no_path:
+                #ifndef NDEBUG
+                    printf("[path] Null pointer provided for parameter \"pp_path\" in call to function \"%s\"\n", __FUNCTION__);
+                #endif
+
+                // Error 
+                return 0;
+        }
+    
+        // path
+        {
+            failed_to_navigate:
+                #ifndef NDEBUG
+                    printf("[path] path_navigate returned an erroneous value in call to function \"%s\"\n", __FUNCTION__);
+                #endif
+
+                // Error
+                return 0;
+        }
+    }
+}
+
+/*
     // Platform dependent initialized data
     #ifdef _WIN64
 
@@ -584,46 +770,7 @@ int path_open ( path **pp_path, const char *path_string )
     }
     #endif
 
-    // Return a pointer to the caller
-    *pp_path = p_path;
-
-    // Success
-    return 1;
-
-    path_not_found:
-    find_next_file_failed:
-    failed_to_open_file:
-    failed_to_get_file_attributes:
-    failed_to_get_file_properties:
-        return 0;
-
-    // Error handling
-    {
-
-        // Argument errors
-        {
-            no_path:
-                #ifndef NDEBUG
-                    printf("[path] Null pointer provided for parameter \"pp_path\" in call to function \"%s\"\n", __FUNCTION__);
-                #endif
-
-                // Error 
-                return 0;
-        }
-    
-        // Standard library errors
-        {
-            no_mem:
-                #ifndef NDEBUG
-                    printf("[Standard library] Failed to allocate memory in call to function \"%s\"\n", __FUNCTION__);
-                #endif
-
-                // Error
-                return 0;
-        }
-    }
-}
-
+*/
 const char *path_name_text ( const path *const p_path )
 {
 
@@ -632,8 +779,11 @@ const char *path_name_text ( const path *const p_path )
         if ( p_path == (void *) 0 ) goto no_path;
     #endif
 
+    // 
+    if ( p_path->full_path.dirty ) path_update_full_path( p_path );
+
     // Success
-    return p_path->name;
+    return p_path->full_path.text_name;
 
     // Error handling
     {
@@ -685,8 +835,17 @@ const char *path_full_path_text ( const path *const p_path )
         if ( p_path == (void *) 0 ) goto no_path;
     #endif
 
+    // State check
+    if ( p_path->full_path.dirty == false ) 
+        if ( path_update_full_path(p_path) == 0 )
+            goto failed_to_update_full_path; 
+
     // Success
-    return p_path->full_path;
+    return p_path->full_path.text;
+
+    failed_to_update_full_path:
+    // Error
+    return 0;
 
     // Error handling
     {
@@ -741,8 +900,11 @@ int path_file_size ( const path *const p_path, size_t *p_size_in_bytes )
     // Error checking
     if ( p_path->type != PATH_TYPE_FILE ) goto wrong_path_type;
 
-    // Return 
-    *p_size_in_bytes = p_path->file;
+    // State checking
+    if ( p_path->data.dirty == true ) path_update_full_path(p_path);
+
+    // Return
+    *p_size_in_bytes = p_path->data.file;
 
     // Success
     return 1;
@@ -786,14 +948,14 @@ size_t path_directory_content_names ( const path *const p_path, const char **con
 {
 
     // Return
-    return dict_keys(p_path->directory, names );
+    return dict_keys(p_path->data.directory, names );
 }
 
 size_t path_directory_content_types ( const path *const p_path, const path_type *const types )
 {
 
     // Return
-    return dict_values(p_path->directory, types );
+    return dict_values(p_path->data.directory, types );
 }
 
 int path_navigate ( path **pp_path, const char *path_text )
@@ -803,122 +965,96 @@ int path_navigate ( path **pp_path, const char *path_text )
     #ifndef NDEBUG
         if ( pp_path   == (void *) 0 ) goto no_path;
         if ( path_text == (void *) 0 ) goto no_path_text;
+        if ( *pp_path  == (void *) 0 ) goto construct_path;
     #endif
 
-    // Initialized data
-    path       *p_path      = (void *) *pp_path;
-    const char *i_path_text = 0;
-    struct stat st          = { 0 };
-    
-    // Base
-    if ( *path_text == '\0' ) return 0; 
-
-    i_path_text = strchr(path_text, '/');
-
-    // Update the path
-    if ( i_path_text == 0 )
+    // Navigate branch
     {
 
         // Initialized data
-        size_t path_name_len = strlen(path_text);
-        size_t full_path_len = strlen(p_path->full_path);
-
-        // Update the file name
-        strncpy(p_path->name, path_text, path_name_len);
-
-        // Write a null terminator
-        p_path->name[path_name_len] = '\0';
-
-        // Update the full path
-        p_path->full_path[full_path_len]   = '/';
+        path *p_path = (void *) *pp_path;
         
-        // Copy the path name
-        strncpy(&p_path->full_path[full_path_len+1], path_text, path_name_len);
+        // Special cases
 
-        // Write a null terminator
-        p_path->full_path[full_path_len+path_name_len+1] = '\0';
-
-        // File status
-        stat(p_path->full_path, &st);
-
-        // Directory
-        if ( (st.st_mode & S_IFMT) == S_IFDIR )
+        // Maybe "." or ".." or invalid
+        if ( path_text[0] == '.' ) 
         {
 
-            // Initialized data
-            dict *p_dict      = p_path->directory;
-            DIR  *p_directory = { 0 };
-
-            // Free the contents of the old dictionary
-            if ( dict_clear(p_dict) == 0 ) goto failed_to_clear_dict;
-
-            struct dirent *p_file_directory_entry;
-            
-            // Open the directory
-            p_directory = opendir(p_path->full_path);
-
-            // Error check
-            if ( p_directory == NULL ) goto path_not_found;
-            
-            // Skip "."
-            p_file_directory_entry = readdir(p_directory);
-
-            // Skip ".."
-            p_file_directory_entry = readdir(p_directory);
-            
-            // Iterate over each path
-            while ( ( p_file_directory_entry = readdir(p_directory) ) )
+            // ".."
+            if ( path_text[1] == '.' ) 
             {
 
+                if ( path_text[2] == '/')
+                {
 
-                // Build the path 
-                size_t full_path_len = sprintf(p_path->full_path, "%s/%s", p_path->full_path, p_file_directory_entry->d_name);
+                }
+                else if ( path_text[2] == '\0')
+                {
 
-                size_t path_len = strlen(p_file_directory_entry->d_name);
-
-                char *p_i_path_text = PATH_REALLOC(0, path_len+1);
-
-                strncpy(p_i_path_text, p_file_directory_entry->d_name, path_len);
-
-                // File status
-                stat(p_path->full_path, &st);
-
-                // Parse the path as a directory
-                if ( (st.st_mode & S_IFMT) == S_IFDIR ) dict_add(p_dict, p_i_path_text, (void *)PATH_TYPE_DIRECTORY);
-
-                // Parse the path as a file
-                else dict_add(p_dict, p_i_path_text, (void *)PATH_TYPE_FILE);
-                
+                }
+                else
+                    return 0;
             }
+            else if ( path_text[1] == '\0' )
+            {
+
+            }
+            else
+                return 0;
+        }
+
+        // Error check
+        if ( p_path->type != PATH_TYPE_DIRECTORY ) goto wrong_path_type;
+
+        // Build the path
+        {
 
             // Write a null terminator
-            p_path->full_path[full_path_len+path_name_len+1] = '\0';
-
-            p_path->type      = PATH_TYPE_DIRECTORY;
-            p_path->directory = p_dict;
+            p_path->full_path.text[p_path->full_path.i_text_name] = '\0';
         }
 
-        // File
-        else if ( (st.st_mode & S_IFMT) == S_IFREG )
-        {
-            p_path->type = PATH_TYPE_FILE;
-            p_path->file = st.st_size;
-        }
+        path_built:;
+        
+        // Return
+        //return path_navigate( pp_path, i_path_text );
+    }
+
+    // Constructor branch
+    construct_path:
+    {
+
+        // Initialized data
+        path   *p_path        = 0;
+        size_t  path_text_len = strlen(path_text);
+
+        // Allocate a path
+        if ( path_create(&p_path) == 0 ) goto failed_to_allocate_path;
+
+        // Allocate memory for path
+        p_path->full_path.text_max_len = 1024+1+path_text_len;
+        p_path->full_path.i_text_name = path_text_len;
+        p_path->full_path.text = PATH_REALLOC(0, sizeof(char)*(p_path->full_path.text_max_len));
+
+        // Copy the string
+        strncpy(p_path->full_path.text, path_text, p_path->full_path.text_max_len);
+
+        path_update_full_path(p_path);
+        path_update_data(p_path);
+
+        // Return a pointer to the path
+        *pp_path = p_path;
 
         // Success
         return 1;
     }
-
-    // Recursively navigate using path_text
-    if ( path_navigate( pp_path, i_path_text ) == 0 ) goto failed_to_navigate;
     
-    // Success
-    return 1;
-
     failed_to_clear_dict:
     path_not_found:
     no_mem:
+    failed_to_allocate_path:
+    wrong_path_type:
 
+    // Error
     return 0;
     
     // Error handling
@@ -1266,22 +1402,10 @@ int path_close ( path **pp_path )
     // No more pointer for caller
     *pp_path = 0;
 
-    // Free the full path string
-    if ( p_path->full_path )
-        if ( PATH_REALLOC(p_path->full_path, 0) )
-            goto failed_to_free;
-
-    // Free the name
-    if ( PATH_REALLOC(p_path->name, 0) ) goto failed_to_free;
-
-    // Free the path
-    if ( PATH_REALLOC(p_path, 0) ) goto failed_to_free;
+    // TODO
 
     // Success
     return 1;
-
-    failed_to_recursively_free_path_contents:
-        return 0;
 
     // Error handling
     {

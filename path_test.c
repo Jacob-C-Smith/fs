@@ -293,7 +293,7 @@ int path_to_json ( const path *const p_path, json_value **pp_value )
     json_value *p_value1    = calloc(1, sizeof(json_value));
     json_value *p_value2    = calloc(1, sizeof(json_value));
     const char *p_path_name = path_name_text(p_path);
-    size_t      len         = strlen(path_name);
+    size_t      len         = 0;//strlen(path_name);
     char       *_path_name  = calloc(len+1, sizeof(char));
 
     p_value1->type = JSON_VALUE_OBJECT;

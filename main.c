@@ -18,14 +18,11 @@ int main ( int argc, const char *argv[] )
     char *names[100]               = { 0 };
     path_type types[100]           = { 0 };
 
-    // Error check
-    if ( argc != 2 ) goto usage_message;
-
     // Open a path
     if ( path_open(&p_path_file, "/mnt/c/Users/j/Desktop/path_experiment") == 0 ) goto failed_to_open_path;
 
     // Create a file
-    if ( path_create_file(p_path_file, "file.txt") == 0 ) goto failed_to_create_file;
+    //if ( path_create_file(p_path_file, "file.txt") == 0 ) goto failed_to_create_file;
     
     // Create a directory
     //if ( path_create_directory(p_path_file, "directory") == 0 ) goto failed_to_create_directory;
@@ -38,6 +35,10 @@ int main ( int argc, const char *argv[] )
 
     // Navigate into the subdirectory
     if ( path_navigate(&p_path_file, "subdirectory") == 0 ) goto failed_to_navigate;
+
+    if ( path_navigate(&p_path_file, "../") == 0 ) goto failed_to_navigate;
+    
+    if ( path_navigate(&p_path_file, "../") == 0 ) goto failed_to_navigate;
 
     // Create a file
     if ( path_create_file(p_path_file, "file.txt") == 0 ) goto failed_to_create_file;
