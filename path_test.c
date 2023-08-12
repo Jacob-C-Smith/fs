@@ -251,24 +251,30 @@ int run_tests(void)
         // Test an empty directory
         test_directory("directory");
 
+        // TODO: FIX FOR GITHUB CI/CD
         // Test a directory with a file in it
         //test_directory_file("directory file");
 
+        // TODO: FIX FOR GITHUB CI/CD
         // Test a directory with many files in it
         //test_directory_files("directory files");
 
         // Test a directory with a directory in it
         test_directory_directory("directory directory");
 
+        // TODO: FIX FOR GITHUB CI/CD
         // Test a directory with a directory in it, with a file in it
         //test_directory_directory_file("directory directory file");
 
+        // TODO: FIX FOR GITHUB CI/CD
         //test_directory_directories
         //test_directory_directories("directory directories");
 
+        // TODO: FIX FOR GITHUB CI/CD
         //test directory mixed
         //test_directory_mixed("directory mixed");
 
+        // TODO: FIX FOR GITHUB CI/CD
         //test directory nested
         //test_directory_nested("directory nested");
     }
