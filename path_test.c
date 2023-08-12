@@ -264,13 +264,13 @@ int run_tests(void)
         //test_directory_directory_file("directory directory file");
 
         //test_directory_directories
-        test_directory_directories("directory directories");
+        //test_directory_directories("directory directories");
 
         //test directory mixed
         //test_directory_mixed("directory mixed");
 
         //test directory nested
-        //test_directory_nested("directory nested");
+        test_directory_nested("directory nested");
     }
 
     // Test navigate
