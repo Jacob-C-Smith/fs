@@ -30,11 +30,13 @@ struct path_s
     } history;
 
     // Path 
-    union
+    struct
     {
-        bool    dirty;
-        size_t  file;      // Size of the file in bytes
-        dict   *directory; // Directory contents in a dict as < path_name_text : path_type >
+        bool dirty;
+        union {
+            size_t  file;      // Size of the file in bytes
+            dict   *directory; // Directory contents in a dict as < path_name_text : path_type >
+        };
     } data;
 };
 
@@ -51,7 +53,10 @@ int path_update_full_path ( path *p_path )
     p_path->full_path.text_name = slash_name;
 
     // Get the index of the last / character
-    p_path->full_path.i_text_name = ( slash_name - p_path->full_path.text_name );
+    p_path->full_path.i_text_name = ( slash_name - p_path->full_path.text );
+
+    // Get the length of the full path
+    p_path->full_path.text_len = ( slash_name + strlen(slash_name) ) - p_path->full_path.text;
 
     // Clear dirty flag
     p_path->full_path.dirty = false;
@@ -72,6 +77,9 @@ int path_update_data ( path *p_path )
     #ifndef NDEBUG
         if ( p_path == (void *) 0 ) goto no_path;
     #endif
+    
+    // Clear the dirty bit
+    if ( p_path->data.dirty == false ) goto not_dirty;
 
     // Initialized data
     size_t path_name_len = strlen(p_path->full_path.text_name);
@@ -86,7 +94,7 @@ int path_update_data ( path *p_path )
     {
 
         // Initialized data
-        dict *p_dict      = 0;
+        dict *p_dict      = p_path->data.directory;
         DIR  *p_directory = { 0 };
         struct dirent *p_file_directory_entry;
 
@@ -99,11 +107,11 @@ int path_update_data ( path *p_path )
             
             // Allocate a dictionary
             dict_construct(&p_dict, 32);
-
         }
 
         // Free the contents of the old dictionary
-        if ( dict_clear(p_dict) == 0 ) goto failed_to_clear_dict;
+        else
+            if ( dict_clear(p_dict) == 0 ) goto failed_to_clear_dict;
 
         // Open the directory
         p_directory = opendir(p_path->full_path.text);
@@ -128,19 +136,27 @@ int path_update_data ( path *p_path )
 
             strncpy(p_i_path_text, p_file_directory_entry->d_name, path_len);
 
+            p_i_path_text[path_len] = '\0';
+
             // File status
             stat(p_path->full_path.text, &st);
 
             // Parse the path as a directory
-            if ( (st.st_mode & S_IFMT) == S_IFDIR ) dict_add(p_dict, p_i_path_text, (void *)PATH_TYPE_DIRECTORY);
+            if ( (st.st_mode & S_IFMT) == S_IFDIR )
+            {
+                dict_add(p_dict, p_i_path_text, (void *)PATH_TYPE_DIRECTORY);
+            }
 
             // Parse the path as a file
-            else dict_add(p_dict, p_i_path_text, (void *)PATH_TYPE_FILE);
+            else 
+            {
+                dict_add(p_dict, p_i_path_text, (void *)PATH_TYPE_FILE);
+            }
 
         }
 
-        p_path->type           = PATH_TYPE_DIRECTORY;
         p_path->data.directory = p_dict;
+        p_path->type           = PATH_TYPE_DIRECTORY;
     }
 
     // File
@@ -148,12 +164,13 @@ int path_update_data ( path *p_path )
     {
         p_path->type = PATH_TYPE_FILE;
 
-        p_path->data.file = st.st_size;
+        p_path->data.file = (size_t) st.st_size;
     }
 
     // Clear the dirty bit
     p_path->data.dirty = false;
-
+    
+    not_dirty:
     //  Success
     return 1;
 
@@ -901,7 +918,7 @@ int path_file_size ( const path *const p_path, size_t *p_size_in_bytes )
     if ( p_path->type != PATH_TYPE_FILE ) goto wrong_path_type;
 
     // State checking
-    if ( p_path->data.dirty == true ) path_update_full_path(p_path);
+    if ( p_path->data.dirty == true ) path_update_data(p_path);
 
     // Return
     *p_size_in_bytes = p_path->data.file;
@@ -944,11 +961,11 @@ int path_file_size ( const path *const p_path, size_t *p_size_in_bytes )
     }
 }
 
-size_t path_directory_content_names ( const path *const p_path, const char **const names )
+dict *path_directory_contens ( const path *const p_path, const char **names )
 {
 
     // Return
-    return dict_keys(p_path->data.directory, names );
+    return p_path->data.directory;
 }
 
 size_t path_directory_content_types ( const path *const p_path, const path_type *const types )
@@ -990,7 +1007,18 @@ int path_navigate ( path **pp_path, const char *path_text )
                 }
                 else if ( path_text[2] == '\0')
                 {
+                    *(strrchr(p_path->full_path.text, '/')) = '\0';
 
+                    {
+                        p_path->full_path.dirty = true;
+                        p_path->data.dirty = true;
+
+                        path_update_full_path(p_path);
+                        path_update_data(p_path);
+                    }
+
+                    // Success
+                    return 1;
                 }
                 else
                     return 0;
@@ -999,8 +1027,6 @@ int path_navigate ( path **pp_path, const char *path_text )
             {
 
             }
-            else
-                return 0;
         }
 
         // Error check
@@ -1009,14 +1035,32 @@ int path_navigate ( path **pp_path, const char *path_text )
         // Build the path
         {
 
-            // Write a null terminator
-            p_path->full_path.text[p_path->full_path.i_text_name] = '\0';
+
+            char *next_fwslash = strchr(path_text, '/');
+
+            // Write a '/' and a null terminator
+            p_path->full_path.text[p_path->full_path.text_len + 0] = '/';
+            p_path->full_path.text[p_path->full_path.text_len + 1] = '\0';
+
+            strncpy(&p_path->full_path.text[p_path->full_path.text_len + 1], path_text, strlen(path_text));
+            
+            if ( next_fwslash == 0 )
+            {
+                p_path->full_path.dirty = true;
+                p_path->data.dirty = true;
+
+                path_update_full_path(p_path);
+                path_update_data(p_path);
+
+                // Success
+                return 1;
+            }
         }
 
         path_built:;
         
         // Return
-        //return path_navigate( pp_path, i_path_text );
+        return path_navigate( pp_path, 0 );
     }
 
     // Constructor branch
@@ -1024,7 +1068,7 @@ int path_navigate ( path **pp_path, const char *path_text )
     {
 
         // Initialized data
-        path   *p_path        = 0;
+        path   *p_path = 0;
         size_t  path_text_len = strlen(path_text);
 
         // Allocate a path
@@ -1032,11 +1076,13 @@ int path_navigate ( path **pp_path, const char *path_text )
 
         // Allocate memory for path
         p_path->full_path.text_max_len = 1024+1+path_text_len;
-        p_path->full_path.i_text_name = path_text_len;
         p_path->full_path.text = PATH_REALLOC(0, sizeof(char)*(p_path->full_path.text_max_len));
 
         // Copy the string
         strncpy(p_path->full_path.text, path_text, p_path->full_path.text_max_len);
+
+        p_path->full_path.dirty = true;
+        p_path->data.dirty = true;
 
         path_update_full_path(p_path);
         path_update_data(p_path);
@@ -1279,6 +1325,11 @@ int path_remove ( path *p_path, const char *path_name )
 
     // Success
     return 1;
+}
+
+size_t path_directory_content_names ( const path *const p_path, const char **const names )
+{
+    return dict_keys(p_path->data.directory, names);
 }
 
 int path_directory_foreach_i ( const path *const p_path, void (*pfn_path_iter)(const char *full_path, path_type type, size_t i))

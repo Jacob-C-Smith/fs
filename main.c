@@ -2,7 +2,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// Include
+// dict submodule
+#include <dict/dict.h>
+
+// path submodule
 #include <path/path.h>
 
 // Entry point
@@ -15,34 +18,10 @@ int main ( int argc, const char *argv[] )
     size_t      size_in_bytes      = 0;
     size_t      directory_contents = 0;
     const char *p_path_name        = 0;
-    char *names[100]               = { 0 };
-    path_type types[100]           = { 0 };
 
     // Open a path
     if ( path_open(&p_path_file, "/mnt/c/Users/j/Desktop/path_experiment") == 0 ) goto failed_to_open_path;
-
-    // Create a file
-    //if ( path_create_file(p_path_file, "file.txt") == 0 ) goto failed_to_create_file;
     
-    // Create a directory
-    //if ( path_create_directory(p_path_file, "directory") == 0 ) goto failed_to_create_directory;
-
-    // Navigate into the directory
-    if ( path_navigate(&p_path_file, "directory") == 0 ) goto failed_to_navigate;
-
-    // Create a subdirectory
-    //if ( path_create_directory(p_path_file, "subdirectory") == 0 ) goto failed_to_create_directory;
-
-    // Navigate into the subdirectory
-    if ( path_navigate(&p_path_file, "subdirectory") == 0 ) goto failed_to_navigate;
-
-    if ( path_navigate(&p_path_file, "../") == 0 ) goto failed_to_navigate;
-    
-    if ( path_navigate(&p_path_file, "../") == 0 ) goto failed_to_navigate;
-
-    // Create a file
-    if ( path_create_file(p_path_file, "file.txt") == 0 ) goto failed_to_create_file;
-
     // Close the path
     (void)path_close(&p_path_file);
 
