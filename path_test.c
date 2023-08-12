@@ -49,14 +49,19 @@
 // array submodule
 #include <array/array.h>
 
+// stack submodule
+#include <stack/stack.h>
+
+// path submodule
+#include <path/path.h>
+
 // json submodule
 #include <json/json.h>
 
 // json tester submodule
 #include <json/json_test.h>
 
-// path submodule
-#include <path/path.h>
+
 
 //////////////////
 // Test results //

@@ -20,10 +20,10 @@ int main ( int argc, const char *argv[] )
     const char *p_path_name        = 0;
 
     // Open a path
-    if ( path_open(&p_path_file, "/mnt/c/Users/j/Desktop/path_experiment") == 0 ) goto failed_to_open_path;
+    //if ( path_open(&p_path_file, "/mnt/c/Users/j/Desktop/path_experiment") == 0 ) goto failed_to_open_path;
     
     // Close the path
-    (void)path_close(&p_path_file);
+    //(void)path_close(&p_path_file);
 
     // Success
     return EXIT_SUCCESS;
