@@ -249,22 +249,22 @@ int run_tests(void)
     {
 
         // Test an empty directory
-        //test_directory("directory");
+        test_directory("directory");
 
         // Test a directory with a file in it
-        //test_directory_file("directory file");
+        test_directory_file("directory file");
 
         // Test a directory with many files in it
-        //test_directory_files("directory files");
+        test_directory_files("directory files");
 
         // Test a directory with a directory in it
-        //test_directory_directory("directory directory");
+        test_directory_directory("directory directory");
 
         // Test a directory with a directory in it, with a file in it
-        //test_directory_directory_file("directory directory file");
+        test_directory_directory_file("directory directory file");
 
         //test_directory_directories
-        //test_directory_directories("directory directories");
+        test_directory_directories("directory directories");
 
         //test directory mixed
         //test_directory_mixed("directory mixed");
@@ -605,6 +605,8 @@ int print_test(const char *scenario_name, const char *test_name, bool passed)
 
         ephemeral_tests++;
     }
+
+    fflush(stdout);
 
     // Success
     return 1;
