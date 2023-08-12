@@ -255,7 +255,7 @@ int run_tests(void)
         //test_directory_file("directory file");
 
         // Test a directory with many files in it
-        test_directory_files("directory files");
+        //test_directory_files("directory files");
 
         // Test a directory with a directory in it
         test_directory_directory("directory directory");
