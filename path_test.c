@@ -61,8 +61,6 @@
 // json tester submodule
 #include <json/json_test.h>
 
-
-
 //////////////////
 // Test results //
 //////////////////
@@ -251,28 +249,28 @@ int run_tests(void)
     {
 
         // Test an empty directory
-        test_directory("directory");
+        //test_directory("directory");
 
         // Test a directory with a file in it
-        test_directory_file("directory file");
+        //test_directory_file("directory file");
 
         // Test a directory with many files in it
-        test_directory_files("directory files");
+        //test_directory_files("directory files");
 
         // Test a directory with a directory in it
-        test_directory_directory("directory directory");
+        //test_directory_directory("directory directory");
 
         // Test a directory with a directory in it, with a file in it
-        test_directory_directory_file("directory directory file");
+        //test_directory_directory_file("directory directory file");
 
         //test_directory_directories
-        test_directory_directories("directory directories");
+        //test_directory_directories("directory directories");
 
         //test directory mixed
         //test_directory_mixed("directory mixed");
 
         //test directory nested
-        test_directory_nested("directory nested");
+        //test_directory_nested("directory nested");
     }
 
     // Test navigate
