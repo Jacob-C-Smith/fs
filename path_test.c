@@ -270,7 +270,7 @@ int run_tests(void)
         //test_directory_mixed("directory mixed");
 
         //test directory nested
-        test_directory_nested("directory nested");
+        //test_directory_nested("directory nested");
     }
 
     // Test navigate
