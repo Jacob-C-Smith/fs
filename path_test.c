@@ -97,7 +97,7 @@ int test_directory_file             ( char *name );
 int test_directory_files            ( char *name );
 int test_directory_directory        ( char *name );
 int test_directory_directory_file   ( char *name );
-int test_directory_directories_file ( char *name );
+int test_directory_directories      ( char *name );
 int test_directory_mixed            ( char *name );
 int test_directory_nested           ( char *name );
 
@@ -260,14 +260,19 @@ int run_tests(void)
         // Test a directory with a directory in it, with a file in it
         test_directory_directory_file("directory directory file");
 
-        //test_directory_directories_file
-        //test_directory_mixed           
-        //test_directory_nested      
+        //test_directory_directories
+        test_directory_directories("directory directories");
+
+        //test directory mixed
+        //test_directory_mixed("directory mixed");
+
+        //test directory nested
+        test_directory_nested("directory nested");
     }
 
     // Test navigate
     {
-    
+        
     }
 
     // Test create / remove
@@ -287,6 +292,8 @@ int run_tests(void)
 int test_file_txt(char *name)
 {
 
+    printf("Scenario: %s\n", name);
+
     print_test(name, "path_open_file.txt", test_open("test cases/json/file.txt.json", "test cases/paths/file.txt", match));
     print_test(name, "path_type", test_path_type(PATH_TYPE_FILE, "test cases/paths/file.txt", match));
     print_test(name, "path_file_size", test_file_size(0, "test cases/paths/file.txt", match));
@@ -300,6 +307,8 @@ int test_file_txt(char *name)
 
 int test_file_size_txt(char *name)
 {
+    printf("Scenario: %s\n", name);
+    
     print_test(name, "(null)_open_file size.txt", test_open("test cases/json/file size.txt.json", "test cases/paths/file size.txt", match));
     print_test(name, "path_type", test_path_type(PATH_TYPE_FILE, "test cases/paths/file size.txt", match));
     print_test(name, "path_file_size", test_file_size(34, "test cases/paths/file size.txt", match));
@@ -313,7 +322,7 @@ int test_file_size_txt(char *name)
 
 int test_directory ( char *name )
 {
-
+    printf("Scenario: %s\n", name);
     print_test(name, "(null)_open_directory", test_open("test cases/json/directory.json", "test cases/paths/directory", match));
     print_test(name, "path_type", test_path_type(PATH_TYPE_DIRECTORY, "test cases/paths/directory", match));
 
@@ -326,7 +335,7 @@ int test_directory ( char *name )
 
 int test_directory_file ( char *name )
 {
-
+    printf("Scenario: %s\n", name);
     print_test(name, "(null)_open_directory_file", test_open("test cases/json/directory file.json", "test cases/paths/directory file", match));
     print_test(name, "path_type", test_path_type(PATH_TYPE_DIRECTORY, "test cases/paths/directory", match));
 
@@ -339,7 +348,7 @@ int test_directory_file ( char *name )
 
 int test_directory_files ( char *name )
 {
-
+    printf("Scenario: %s\n", name);
     print_test(name, "(null)_open_directory files", test_open("test cases/json/directory files.json", "test cases/paths/directory files", match));
     print_test(name, "path_type", test_path_type(PATH_TYPE_DIRECTORY, "test cases/paths/directory files", match));
 
@@ -352,7 +361,7 @@ int test_directory_files ( char *name )
 
 int test_directory_directory ( char *name )
 {
-
+    printf("Scenario: %s\n", name);
     print_test(name, "(null)_open_directory", test_open("test cases/json/directory directory.json", "test cases/paths/directory directory", match));
     print_test(name, "path_type", test_path_type(PATH_TYPE_DIRECTORY, "test cases/paths/directory directory", match));
 
@@ -365,7 +374,7 @@ int test_directory_directory ( char *name )
 
 int test_directory_directory_file ( char *name )
 {
-
+    printf("Scenario: %s\n", name);
     print_test(name, "(null)_open_directory", test_open("test cases/json/directory directory file.json", "test cases/paths/directory directory file", match));
     print_test(name, "path_type", test_path_type(PATH_TYPE_DIRECTORY, "test cases/paths/directory directory file", match));
 
@@ -376,24 +385,11 @@ int test_directory_directory_file ( char *name )
     return 1;
 }
 
-int test_directory_directories_file ( char *name )
+int test_directory_directories ( char *name )
 {
-
-    print_test(name, "(null)_open_directory", test_open("test cases/json/directory.json", "test cases/paths/directory", match));
-    print_test(name, "path_type", test_path_type(PATH_TYPE_DIRECTORY, "test cases/paths/directory", match));
-
-    // Log
-    print_final_summary();
-
-    // Success
-    return 1;
-}
-
-int test_directory_mixed ( char *name )
-{
-
-    print_test(name, "(null)_open_directory", test_open("test cases/json/directory.json", "test cases/paths/directory", match));
-    print_test(name, "path_type", test_path_type(PATH_TYPE_DIRECTORY, "test cases/paths/directory", match));
+    printf("Scenario: %s\n", name);
+    print_test(name, "(null)_open_directory", test_open("test cases/json/directory directories.json", "test cases/paths/directory directories", match));
+    print_test(name, "path_type", test_path_type(PATH_TYPE_DIRECTORY, "test cases/paths/directory directories", match));
 
     // Log
     print_final_summary();
@@ -404,9 +400,9 @@ int test_directory_mixed ( char *name )
 
 int test_directory_nested ( char *name )
 {
-
-    print_test(name, "(null)_open_directory", test_open("test cases/json/directory.json", "test cases/paths/directory", match));
-    print_test(name, "path_type", test_path_type(PATH_TYPE_DIRECTORY, "test cases/paths/directory", match));
+    printf("Scenario: %s\n", name);
+    print_test(name, "(null)_open_directory", test_open("test cases/json/directory nested.json", "test cases/paths/directory nested", match));
+    print_test(name, "path_type", test_path_type(PATH_TYPE_DIRECTORY, "test cases/paths/directory nested", match));
 
     // Log
     print_final_summary();
@@ -437,12 +433,6 @@ bool test_open(const char *expected_path_json, const char *path_text, result_t r
 
     // Parse the text into a JSON value
     parse_json_value(expected_path_json_text, 0, &p_expected_value);
-
-    printf("\n\n");
-    print_json_value(p_expected_value, stdout);
-    printf("\n\n");
-    print_json_value(p_result_value, stdout);
-    printf("\n\n");
 
     // Compare the json_value representations of the path against the expected json_value
     if ( value_equals(p_expected_value, p_result_value) == true)
@@ -555,45 +545,34 @@ int path_to_json_value(const path *const p_path, json_value **pp_value)
         for (size_t i = 0; i < count; i++)
         {
 
-            // Initialized data
             json_value *p_valueN       = 0;
             size_t      path_name_len  = strlen(names[i]);
             char       *path_name_copy = calloc(path_name_len+1, sizeof(char));
 
-            // Copy the path text
             strncpy(path_name_copy, names[i], path_name_len);
 
-            // Down
             path_navigate(&p_path, path_name_copy);
             
-                if ( path_type_path(p_path) == PATH_TYPE_FILE )
-                {
-                    p_valueN = calloc(1, sizeof(json_value));
-                    p_valueN->type = JSON_VALUE_INTEGER;
-                    path_file_size(p_path, &p_valueN->integer);
-                    dict_add(p_value2->object, path_name_copy, p_valueN);
+            if ( path_type_path(p_path) == PATH_TYPE_FILE )
+            {
+                p_valueN = calloc(1, sizeof(json_value));
+                p_valueN->type = JSON_VALUE_INTEGER;
+                path_file_size(p_path, &p_valueN->integer);
+                dict_add(p_value2->object, path_name_copy, p_valueN);
 
-                }
-                else
-                {
-                    path_to_json_value(p_path, &p_valueN);
-                    
-                    {
-                        size_t len = dict_keys(p_valueN->object, 0);
+            }
+            else
+            {
+                path_to_json_value(p_path, &p_valueN);
 
-                    }
+                dict_add(p_value2->object, path_name_copy, dict_get(p_valueN->object, path_name_copy));
 
-                }
+            }
 
-            // Up
+
             path_navigate(&p_path, "..");
         }
     
-        //
-        printf("ln. 586\n");
-        print_json_value(p_value2, stdout);
-        fflush(stdout);
-        
         dict_add(p_value1->object, _path_name, p_value2);
     }
 

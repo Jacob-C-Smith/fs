@@ -1,1 +1,1 @@
-{ "directory directory file" : { "directory" : { "directory" : { "file" : 7 } } } }
+{ "directory directory file" : { "directory" : { "file.txt" : 7 } } }

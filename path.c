@@ -58,6 +58,8 @@ int path_update_full_path ( path *p_path )
     // Get the length of the full path
     p_path->full_path.text_len = ( slash_name + strlen(slash_name) ) - p_path->full_path.text;
 
+    p_path->full_path.text[p_path->full_path.text_len] = '\0';
+
     // Clear dirty flag
     p_path->full_path.dirty = false;
 
@@ -985,6 +987,7 @@ int path_navigate ( path **pp_path, const char *path_text )
         if ( *pp_path  == (void *) 0 ) goto construct_path;
     #endif
 
+    
     // Navigate branch
     {
 
@@ -992,6 +995,10 @@ int path_navigate ( path **pp_path, const char *path_text )
         path *p_path = (void *) *pp_path;
         
         // Special cases
+
+        path_update_full_path(p_path);
+        path_update_data(p_path);
+
 
         // Maybe "." or ".." or invalid
         if ( path_text[0] == '.' ) 
@@ -1034,8 +1041,6 @@ int path_navigate ( path **pp_path, const char *path_text )
 
         // Build the path
         {
-
-
             char *next_fwslash = strchr(path_text, '/');
 
             // Write a '/' and a null terminator
