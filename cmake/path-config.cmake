@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.0)
 
 include(FeatureSummary)
 set_package_properties(GPATH PROPERTIES
-    URL "https://www.g10.app/status"
+    URL "https://www.g10.app/status#parser_serializer"
     DESCRIPTION "path"
 )
 
