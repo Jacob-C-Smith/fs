@@ -112,7 +112,7 @@ int path_update_data ( path *p_path )
             p_path->type = PATH_TYPE_DIRECTORY;
             
             // Allocate a dictionary
-            dict_construct(&p_dict, 32);
+            dict_construct(&p_dict, 32, 0);
         }
 
         // Free the contents of the old dictionary

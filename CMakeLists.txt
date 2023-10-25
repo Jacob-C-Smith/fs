@@ -96,16 +96,16 @@ endif()
 add_executable (path_example "main.c")
 add_dependencies(path_example stack dict sync)
 target_include_directories(path_example PUBLIC include include/path ${CMAKE_SOURCE_DIR}/extern/stack/include/ ${CMAKE_SOURCE_DIR}/extern/dict/include/ ${CMAKE_SOURCE_DIR}/extern/sync/include/)
-target_link_libraries(path_example path  dict sync)
+target_link_libraries(path_example path dict sync crypto)
 
 # Add source to the tester
 add_executable (path_test "path_test.c" "path.c" )
 add_dependencies(path_test stack dict sync)
 target_include_directories(path_test PUBLIC include include/path ${CMAKE_SOURCE_DIR}/extern/array/include/ ${CMAKE_SOURCE_DIR}/extern/stack/include/ ${CMAKE_SOURCE_DIR}/extern/dict/include/ ${CMAKE_SOURCE_DIR}/extern/json/include/ ${CMAKE_SOURCE_DIR}/extern/sync/include/)
-target_link_libraries(path_test path json_test_lib json array dict sync)
+target_link_libraries(path_test path json_test_lib json array dict sync crypto)
 
 # Add source to this project's library
 add_library (path SHARED "path.c")
 add_dependencies(path stack dict sync)
 target_include_directories(path PUBLIC include include/path ${CMAKE_SOURCE_DIR}/extern/stack/include/ ${CMAKE_SOURCE_DIR}/extern/dict/include/ ${CMAKE_SOURCE_DIR}/extern/sync/include/)
-target_link_libraries(path PRIVATE stack dict sync)
+target_link_libraries(path PRIVATE stack dict sync crypto)
