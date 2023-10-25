@@ -76,9 +76,7 @@ int path_update_data ( path *p_path )
 {
 
     // Argument check
-    #ifndef NDEBUG
-        if ( p_path == (void *) 0 ) goto no_path;
-    #endif
+    if ( p_path == (void *) 0 ) goto no_path;
     
     // Clear the dirty bit
     if ( p_path->data.dirty == false ) goto not_dirty;
@@ -89,7 +87,13 @@ int path_update_data ( path *p_path )
     struct stat st = { 0 };
 
     // File status
-    stat(p_path->full_path.text, &st);
+    if ( stat(p_path->full_path.text, &st) == -1 ) 
+    {
+
+        p_path->type = 0;
+        goto no_file;
+
+    }
 
     // Directory
     if ( (st.st_mode & S_IFMT) == S_IFDIR )
@@ -112,8 +116,8 @@ int path_update_data ( path *p_path )
         }
 
         // Free the contents of the old dictionary
-        else
-            if ( dict_clear(p_dict) == 0 ) goto failed_to_clear_dict;
+        else;
+            //if ( dict_clear(p_dict) == 0 ) goto failed_to_clear_dict;
 
         // Open the directory
         p_directory = opendir(p_path->full_path.text);
@@ -179,6 +183,8 @@ int path_update_data ( path *p_path )
     no_path:
     failed_to_clear_dict:
     path_not_found:
+    no_file:
+
 
     return 0;
 }
@@ -193,9 +199,7 @@ int path_create ( path **pp_path )
 {
 
     // Argument check
-    #ifndef NDEBUG
-        if ( pp_path == (void *) 0 ) goto no_path;    
-    #endif
+    if ( pp_path == (void *) 0 ) goto no_path;    
 
     // Initialized data
     path *p_path = PATH_REALLOC(0, sizeof(path));
@@ -243,9 +247,7 @@ int path_open ( path **pp_path, const char *path_string )
 {
 
     // Argument check
-    #ifndef NDEBUG
-        if ( pp_path == (void *) 0 ) goto no_path;
-    #endif
+    if ( pp_path == (void *) 0 ) goto no_path;
 
     // Initialized data
     path *p_path = 0;
@@ -794,9 +796,7 @@ const char *path_name_text ( const path *const p_path )
 {
 
     // Argument check
-    #ifndef NDEBUG
-        if ( p_path == (void *) 0 ) goto no_path;
-    #endif
+    if ( p_path == (void *) 0 ) goto no_path;
 
     // 
     if ( p_path->full_path.dirty ) path_update_full_path( p_path );
@@ -822,10 +822,9 @@ const char *path_name_text ( const path *const p_path )
 
 path_type path_type_path ( const path *const p_path )
 {
+
     // Argument check
-    #ifndef NDEBUG
-        if ( p_path == (void *) 0 ) goto no_path;
-    #endif
+    if ( p_path == (void *) 0 ) goto no_path;
 
     // Success
     return p_path->type;
@@ -850,9 +849,7 @@ const char *path_full_path_text ( const path *const p_path )
 {
 
     // Argument check
-    #ifndef NDEBUG
-        if ( p_path == (void *) 0 ) goto no_path;
-    #endif
+    if ( p_path == (void *) 0 ) goto no_path;
 
     // State check
     if ( p_path->full_path.dirty == false ) 
@@ -911,10 +908,8 @@ int path_file_size ( const path *const p_path, size_t *p_size_in_bytes )
 {
     
     // Argument check
-    #ifndef NDEBUG
-        if ( p_path          == (void *) 0 ) goto no_path;
-        if ( p_size_in_bytes == (void *) 0 ) goto no_size_in_bytes;
-    #endif
+    if ( p_path          == (void *) 0 ) goto no_path;
+    if ( p_size_in_bytes == (void *) 0 ) goto no_size_in_bytes;
 
     // Error checking
     if ( p_path->type != PATH_TYPE_FILE ) goto wrong_path_type;
@@ -981,13 +976,10 @@ int path_navigate ( path **pp_path, const char *path_text )
 {
 
     // Argument check
-    #ifndef NDEBUG
-        if ( pp_path   == (void *) 0 ) goto no_path;
-        if ( path_text == (void *) 0 ) goto no_path_text;
-        if ( *pp_path  == (void *) 0 ) goto construct_path;
-    #endif
+    if ( pp_path   == (void *) 0 ) goto no_path;
+    if ( path_text == (void *) 0 ) goto no_path_text;
+    if ( *pp_path  == (void *) 0 ) goto construct_path;
 
-    
     // Navigate branch
     {
 
@@ -997,7 +989,8 @@ int path_navigate ( path **pp_path, const char *path_text )
         // Special cases
 
         path_update_full_path(p_path);
-        path_update_data(p_path);
+        if ( path_update_data(p_path) == 0 )
+            goto failed_to_navigate;
 
 
         // Maybe "." or ".." or invalid
@@ -1021,7 +1014,8 @@ int path_navigate ( path **pp_path, const char *path_text )
                         p_path->data.dirty = true;
 
                         path_update_full_path(p_path);
-                        path_update_data(p_path);
+                        if ( path_update_data(p_path) == 0 )
+                            goto failed_to_navigate;
                     }
 
                     // Success
@@ -1055,7 +1049,8 @@ int path_navigate ( path **pp_path, const char *path_text )
                 p_path->data.dirty = true;
 
                 path_update_full_path(p_path);
-                path_update_data(p_path);
+                if ( path_update_data(p_path) == 0 )
+                    goto failed_to_navigate;
 
                 // Success
                 return 1;
@@ -1090,7 +1085,8 @@ int path_navigate ( path **pp_path, const char *path_text )
         p_path->data.dirty = true;
 
         path_update_full_path(p_path);
-        path_update_data(p_path);
+        if ( path_update_data(p_path) == 0 )
+            goto failed_to_navigate;
 
         // Return a pointer to the path
         *pp_path = p_path;
@@ -1155,10 +1151,8 @@ int path_create_file ( path *p_path, const char *file_name )
 {
 
     // Argument check
-    #ifndef NDEBUG
-        if ( p_path    == (void *) 0 ) goto no_path;
-        if ( file_name == (void *) 0 ) goto no_file_name;
-    #endif
+    if ( p_path    == (void *) 0 ) goto no_path;
+    if ( file_name == (void *) 0 ) goto no_file_name;
 
     // Initialized data
     char _full_file_path[MAX_FILE_PATH_LEN] = { 0 };
@@ -1235,10 +1229,8 @@ int path_create_directory( path *p_path, const char *directory_name )
 {
     
     // Argument check
-    #ifndef NDEBUG
-        if ( p_path    == (void *) 0 ) goto no_path;
-        if ( directory_name == (void *) 0 ) goto no_file_name;
-    #endif
+    if ( p_path         == (void *) 0 ) goto no_path;
+    if ( directory_name == (void *) 0 ) goto no_file_name;
 
     // Initialized data
     char _full_file_path[MAX_FILE_PATH_LEN] = { 0 };
@@ -1341,10 +1333,8 @@ int path_directory_foreach_i ( const path *const p_path, void (*pfn_path_iter)(c
 {
 
     // Argument check
-    #ifndef NDEBUG
-        if ( p_path        == (void *) 0 ) goto no_path;
-        if ( pfn_path_iter == (void *) 0 ) goto no_path_iter;
-    #endif
+    if ( p_path        == (void *) 0 ) goto no_path;
+    if ( pfn_path_iter == (void *) 0 ) goto no_path_iter;
 
     // Initialized data
     size_t directory_content_count = 0;
@@ -1445,9 +1435,7 @@ int path_close ( path **pp_path )
 {
 
     // Argument check
-    #ifndef NDEBUG
-        if ( pp_path == (void *) 0 ) goto no_path;
-    #endif
+    if ( pp_path == (void *) 0 ) goto no_path;
     
     // Initialized data
     path *p_path = *pp_path;

@@ -91,7 +91,8 @@ int run_tests           ( void );
 int print_final_summary ( void );
 int print_test          ( const char *scenario_name, const char *test_name, bool passed );
 size_t load_file        ( const char *path, void *buffer, bool binary_mode );
-
+int path_to_json_value  ( const path *const p_path, json_value **pp_value);
+ 
 int test_file_txt      ( char *name );
 int test_file_size_txt ( char *name );
 
@@ -251,22 +252,19 @@ int run_tests(void)
         // Test an empty directory
         test_directory("directory");
 
-        // TODO: FIX FOR GITHUB CI/CD
         // Test a directory with a file in it
-        //test_directory_file("directory file");
+        test_directory_file("directory file");
 
-        // TODO: FIX FOR GITHUB CI/CD
         // Test a directory with many files in it
-        //test_directory_files("directory files");
-
-        // Test a directory with a directory in it
-        test_directory_directory("directory directory");
+        test_directory_files("directory files");
 
         // TODO: FIX FOR GITHUB CI/CD
+        // Test a directory with a directory in it
+        //test_directory_directory("directory directory");
+
         // Test a directory with a directory in it, with a file in it
         //test_directory_directory_file("directory directory file");
 
-        // TODO: FIX FOR GITHUB CI/CD
         //test_directory_directories
         //test_directory_directories("directory directories");
 
@@ -438,10 +436,15 @@ bool test_open(const char *expected_path_json, const char *path_text, result_t r
     path_to_json_value(p_path, &p_result_value);
 
     // Load the file text
-    load_file(expected_path_json, expected_path_json_text, false);
+    load_file(expected_path_json, expected_path_json_text, true);
 
     // Parse the text into a JSON value
     parse_json_value(expected_path_json_text, 0, &p_expected_value);
+
+    print_json_value(p_expected_value, stdout);
+    printf("\n\n");
+    print_json_value(p_result_value, stdout);
+    printf("\n\n");
 
     // Compare the json_value representations of the path against the expected json_value
     if ( value_equals(p_expected_value, p_result_value) == true)
@@ -560,7 +563,10 @@ int path_to_json_value(const path *const p_path, json_value **pp_value)
 
             strncpy(path_name_copy, names[i], path_name_len);
 
-            path_navigate(&p_path, path_name_copy);
+            if ( path_navigate(&p_path, path_name_copy) == 0 )
+            {
+                goto failed_to_nav;
+            }
             
             if ( path_type_path(p_path) == PATH_TYPE_FILE )
             {
@@ -570,7 +576,7 @@ int path_to_json_value(const path *const p_path, json_value **pp_value)
                 dict_add(p_value2->object, path_name_copy, p_valueN);
 
             }
-            else
+            else if ( path_type_path(p_path) == PATH_TYPE_DIRECTORY )
             {
                 path_to_json_value(p_path, &p_valueN);
 
@@ -578,6 +584,7 @@ int path_to_json_value(const path *const p_path, json_value **pp_value)
 
             }
 
+            failed_to_nav:
 
             path_navigate(&p_path, "..");
         }
@@ -596,7 +603,7 @@ int print_test(const char *scenario_name, const char *test_name, bool passed)
 {
 
     // Initialized data
-    printf("%s %-75s %s\n", scenario_name, test_name, (passed) ? "PASS" : "FAIL");
+    printf("%s %-20s %s\n", scenario_name, test_name, (passed) ? "PASS" : "FAIL");
 
     // Increment the counters
     {
@@ -623,8 +630,8 @@ int print_final_summary()
 
     // Accumulate
     total_tests += ephemeral_tests,
-        total_passes += ephemeral_passes,
-        total_fails += ephemeral_fails;
+    total_passes += ephemeral_passes,
+    total_fails += ephemeral_fails;
 
     // Print
     printf("\nTests: %d, Passed: %d, Failed: %d (%%%.3f)\n", ephemeral_tests, ephemeral_passes, ephemeral_fails, ((float)ephemeral_passes / (float)ephemeral_tests * 100.f));
@@ -673,10 +680,10 @@ size_t load_file(const char *path, void *buffer, bool binary_mode)
 
         // Argument errors
         {
-        no_path:
-#ifndef NDEBUG
-            printf("[path] Null path provided to function \"%s\n", __FUNCTION__);
-#endif
+            no_path:
+                #ifndef NDEBUG
+                            printf("[path] Null path provided to function \"%s\n", __FUNCTION__);
+                #endif
 
             // Error
             return 0;
@@ -684,10 +691,10 @@ size_t load_file(const char *path, void *buffer, bool binary_mode)
 
         // File errors
         {
-        invalid_file:
-#ifndef NDEBUG
-            printf("[Standard library] Failed to load file \"%s\". %s\n", path, strerror(errno));
-#endif
+            invalid_file:
+                #ifndef NDEBUG
+                            printf("[Standard library] Failed to load file \"%s\". %s\n", path, strerror(errno));
+                #endif
 
             // Error
             return 0;
