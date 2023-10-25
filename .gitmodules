@@ -13,3 +13,6 @@
 [submodule "extern/array"]
 	path = extern/array
 	url = https://github.com/Jacob-C-Smith/array
+[submodule "extern/crypto"]
+	path = extern/crypto
+	url = https://github.com/Jacob-C-Smith/crypto
