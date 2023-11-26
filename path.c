@@ -86,23 +86,25 @@ int path_update_data ( path *p_path )
     size_t full_path_len = strlen(p_path->full_path.text);
     struct stat st = { 0 };
 
-    // File status
+    // Check path
     if ( stat(p_path->full_path.text, &st) == -1 ) 
     {
 
+        // Set invalid state
         p_path->type = 0;
-        goto no_file;
 
+        // Error
+        goto no_file;
     }
 
     // Directory
-    if ( (st.st_mode & S_IFMT) == S_IFDIR )
+    if ( ( st.st_mode & S_IFMT ) == S_IFDIR )
     {
 
         // Initialized data
         dict *p_dict      = p_path->data.directory;
         DIR  *p_directory = { 0 };
-        struct dirent *p_file_directory_entry;
+        struct dirent *p_file_directory_entry = { 0 };
 
         // State check
         if ( p_path->type != PATH_TYPE_DIRECTORY )
@@ -135,13 +137,14 @@ int path_update_data ( path *p_path )
         while ( ( p_file_directory_entry = readdir(p_directory) ) )
         {
 
+            // Initialized data
+            size_t  path_len      = strlen(p_file_directory_entry->d_name);
+            char   *p_i_path_text = PATH_REALLOC(0, path_len+1);
 
-            // Build the path 
-            size_t path_len = strlen(p_file_directory_entry->d_name);
-            char *p_i_path_text = PATH_REALLOC(0, path_len+1);
-
+            // Copy the string
             strncpy(p_i_path_text, p_file_directory_entry->d_name, path_len);
 
+            // Set the null terminator
             p_i_path_text[path_len] = '\0';
 
             // File status
@@ -150,43 +153,81 @@ int path_update_data ( path *p_path )
             // Parse the path as a directory
             if ( (st.st_mode & S_IFMT) == S_IFDIR )
             {
+
+                // Store a property
                 dict_add(p_dict, p_i_path_text, (void *)PATH_TYPE_DIRECTORY);
             }
 
             // Parse the path as a file
             else 
             {
+
+                // Store a file property
                 dict_add(p_dict, p_i_path_text, (void *)PATH_TYPE_FILE);
             }
 
         }
 
+        // Store the contents of the directory
         p_path->data.directory = p_dict;
-        p_path->type           = PATH_TYPE_DIRECTORY;
+
+        // Set the correct type
+        p_path->type = PATH_TYPE_DIRECTORY;
     }
 
     // File
     else if ( (st.st_mode & S_IFMT) == S_IFREG )
     {
+
+        // Store the file type
         p_path->type = PATH_TYPE_FILE;
 
+        // Store the file size
         p_path->data.file = (size_t) st.st_size;
+    }
+
+    // Socket
+    else if ( (st.st_mode & S_IFMT) == S_IFSOCK )
+    {
+
+        // TODO:
     }
 
     // Clear the dirty bit
     p_path->data.dirty = false;
     
     not_dirty:
+
     //  Success
     return 1;
 
-    no_path:
+    // TODO: 
     failed_to_clear_dict:
     path_not_found:
     no_file:
 
-
     return 0;
+
+    // Error handling
+    {
+
+        // Argument errors
+        {
+            no_path:
+                #ifndef NDEBUG
+                    printf("[path] Null pointer provided for parameter \"p_path\" in call to function \"%s\"\n", __FUNCTION__);
+                #endif
+
+                // Error
+                return 0;
+        }
+
+        ////
+        //
+        {
+
+        }
+    }
 }
 
 void pfn_path_free( void *vp_memory )
@@ -792,6 +833,7 @@ int path_open ( path **pp_path, const char *path_string )
     #endif
 
 */
+
 const char *path_name_text ( const path *const p_path )
 {
 
@@ -860,6 +902,7 @@ const char *path_full_path_text ( const path *const p_path )
     return p_path->full_path.text;
 
     failed_to_update_full_path:
+
     // Error
     return 0;
 
@@ -1155,17 +1198,15 @@ int path_create_file ( path *p_path, const char *file_name )
     if ( file_name == (void *) 0 ) goto no_file_name;
 
     // Initialized data
-    char _full_file_path[MAX_FILE_PATH_LEN] = { 0 };
-    FILE *f = 0;
-    int snprintf_r = 0;
+    int   snprintf_r                         = 0;
+    FILE *f                                  = 0;
+    char  _full_file_path[MAX_FILE_PATH_LEN] = { 0 };
 
     // Construct the file path
     snprintf_r = snprintf( &_full_file_path, MAX_FILE_PATH_LEN, "%s/%s", p_path->full_path, file_name );
                         
-    // Debug mode error checking
-    #ifndef NDEBUG
-        if ( snprintf_r > MAX_FILE_PATH_LEN ) goto buffer_not_big_enough;
-    #endif
+    // Error checking
+    if ( snprintf_r > MAX_FILE_PATH_LEN ) goto buffer_not_big_enough;
     
     // Open the file
     f = fopen(_full_file_path, "w+");
@@ -1230,20 +1271,18 @@ int path_create_directory( path *p_path, const char *directory_name )
     
     // Argument check
     if ( p_path         == (void *) 0 ) goto no_path;
-    if ( directory_name == (void *) 0 ) goto no_file_name;
+    if ( directory_name == (void *) 0 ) goto no_directory_name;
 
     // Initialized data
-    char _full_file_path[MAX_FILE_PATH_LEN] = { 0 };
-    FILE *f = 0;
-    int snprintf_r = 0;
+    char  _full_file_path[MAX_FILE_PATH_LEN] = { 0 };
+    int   snprintf_r = 0;
+    FILE *f          = 0;
 
     // Construct the file path
     snprintf_r = snprintf( &_full_file_path, MAX_FILE_PATH_LEN, "%s/%s", p_path->full_path, directory_name );
                         
     // Debug mode error checking
-    #ifndef NDEBUG
-        if ( snprintf_r > MAX_FILE_PATH_LEN ) goto buffer_not_big_enough;
-    #endif
+    if ( snprintf_r > MAX_FILE_PATH_LEN ) goto buffer_not_big_enough;
     
     // Platform specific implementation
     #ifdef _WIN64
@@ -1264,11 +1303,6 @@ int path_create_directory( path *p_path, const char *directory_name )
     // Success
     return 1;
 
-    failed_to_create_directory:
-
-    // Error
-    return 0;
-
     // Error handling
     {
 
@@ -1282,9 +1316,9 @@ int path_create_directory( path *p_path, const char *directory_name )
                 // Error
                 return 0;
 
-            no_file_name:
+            no_directory_name:
                 #ifndef NDEBUG
-                    printf("[path] Null pointer provided for parameter \"file_name\" in call to function \"%s\"\n", __FUNCTION__);
+                    printf("[path] Null pointer provided for parameter \"directory_name\" in call to function \"%s\"\n", __FUNCTION__);
                 #endif
 
                 // Error
@@ -1307,6 +1341,14 @@ int path_create_directory( path *p_path, const char *directory_name )
             failed_to_open_file:
                 #ifndef NDEBUG
                     printf("[path] Failed to create file \"%s\" in call to function \"%s\"\n", _full_file_path, __FUNCTION__);
+                #endif
+
+                // Error
+                return 0;
+
+            failed_to_create_directory:
+                #ifndef NDEBUG
+                    printf("[path] Failed to create directory \"%s\" in call to function \"%s\"\n", directory_name, __FUNCTION__);
                 #endif
 
                 // Error
@@ -1351,10 +1393,10 @@ int path_directory_foreach_i ( const path *const p_path, void (*pfn_path_iter)(c
     if ( directory_content_count == 0 ) return 1;
 
     // Allocate memory for path names 
-    if ( PATH_REALLOC(pp_path_names, directory_content_count * sizeof(const char *)) == 0 ) goto no_mem;
+    pp_path_names = PATH_REALLOC(0, directory_content_count * sizeof(const char *));
 
     // Allocate memory for path types
-    if ( PATH_REALLOC(pp_path_types, directory_content_count * sizeof(path_type)) == 0 ) goto no_mem;
+    pp_path_types =  PATH_REALLOC(0, directory_content_count * sizeof(path_type));
 
     // Get the name of each path
     if ( path_directory_content_names(p_path, pp_path_names) == 0 ) goto failed_to_get_directory_content_names;
@@ -1431,6 +1473,7 @@ int path_directory_foreach_i ( const path *const p_path, void (*pfn_path_iter)(c
     }
 }
 
+// TODO
 int path_close ( path **pp_path )
 {
 

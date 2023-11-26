@@ -251,13 +251,13 @@ int run_tests(void)
     {
 
         // Test an empty directory
-        //test_directory("directory");
+        test_directory("directory");
 
         // Test a directory with a file in it
-        //test_directory_file("directory file");
+        test_directory_file("directory file");
 
         // Test a directory with many files in it
-        //test_directory_files("directory files");
+        test_directory_files("directory files");
 
         // Test a directory with a directory in it
         //test_directory_directory("directory directory");

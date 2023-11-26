@@ -8,6 +8,11 @@
 // path submodule
 #include <path/path.h>
 
+void fn_path ( const char *full_path, path_type type, size_t i )
+{
+    printf("%c : %i : %s\n", (type == PATH_TYPE_DIRECTORY) ? 'D' : 'F', i, full_path);
+}
+
 // Entry point
 int main ( int argc, const char *argv[] )
 {
@@ -20,10 +25,13 @@ int main ( int argc, const char *argv[] )
     const char *p_path_name        = 0;
 
     // Open a path
-    //if ( path_open(&p_path_file, "/mnt/c/Users/j/Desktop/path_experiment") == 0 ) goto failed_to_open_path;
+    if ( path_open(&p_path_file, "./") == 0 ) goto failed_to_open_path;
     
+    // Get the contents of the path
+    path_directory_foreach_i(p_path_file, &fn_path);
+
     // Close the path
-    //(void)path_close(&p_path_file);
+    (void)path_close(&p_path_file);
 
     // Success
     return EXIT_SUCCESS;

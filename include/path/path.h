@@ -70,11 +70,12 @@ typedef struct path_s path;
 typedef enum 
 {
     PATH_TYPE_FILE      = 1,
-    PATH_TYPE_DIRECTORY = 2
+    PATH_TYPE_DIRECTORY = 2,
+    PATH_TYPE_SOCKET    = 3
 } path_type;
 
 // Allocators
-/**!
+/** !
  * Allocate memory for a path
  * 
  * @param pp_path ret
@@ -180,7 +181,7 @@ DLLEXPORT int path_navigate ( path **pp_path, const char *path_text );
  * 
  * @return 1 on success, 0 on error
 */
-DLLEXPORT int path_create_file( path *p_path, const char *path );
+DLLEXPORT int path_create_file ( path *p_path, const char *path );
 
 /** !
  * Make a directory in the specified path
@@ -193,10 +194,10 @@ DLLEXPORT int path_create_file( path *p_path, const char *path );
  * 
  * @return 1 on success, 0 on error
 */
-DLLEXPORT int path_create_directory( path *p_path, const char *path );
+DLLEXPORT int path_create_directory ( path *p_path, const char *path );
 
 /** !
- * Remove a file/directory from the specified path
+ * Remove a file / directory from the specified path
  * 
  * @param p_path the specified path
  * @param path the name of the file/directory
@@ -209,7 +210,7 @@ DLLEXPORT int path_remove ( path *p_path, const char *path );
 
 // Iterators
 /** !
- * Calls a parameterized function on each path in the directory
+ * Call a function for each path in a directory
  * 
  * @param p_path the specified path
  * @param pfn_path_iter the iterator function, of type void (*)(const char *full_path, path_type type, size_t i)
