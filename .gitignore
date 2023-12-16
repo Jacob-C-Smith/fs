@@ -56,3 +56,4 @@ dkms.conf
 desktop.ini
 *.ico
 Icon?
+.DS_Store
