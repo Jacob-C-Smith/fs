@@ -16,3 +16,15 @@
 [submodule "extern/crypto"]
 	path = extern/crypto
 	url = https://github.com/Jacob-C-Smith/crypto
+[submodule "extern/path"]
+	path = extern/path
+	url = https://github.com/Jacob-C-Smith/path
+[submodule "extern/hash-cache"]
+	path = extern/hash-cache
+	url = https://github.com/Jacob-C-Smith/hash-cache
+[submodule "extern/double-queue"]
+	path = extern/double-queue
+	url = https://github.com/Jacob-C-Smith/double-queue
+[submodule "extern/log"]
+	path = extern/log
+	url = https://github.com/Jacob-C-Smith/log
